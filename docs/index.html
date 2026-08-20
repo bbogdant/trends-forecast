@@ -1,0 +1,405 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Demand Spike Forecast — Trend Dashboard</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/chartjs-plugin-annotation/3.0.1/chartjs-plugin-annotation.min.js"></script>
+<style>
+  :root{
+    color-scheme: light;
+    --surface-1:#fcfcfb; --page:#f9f9f7; --card:#ffffff;
+    --text-primary:#0b0b0b; --text-secondary:#52514e; --text-muted:#898781;
+    --grid:#e1e0d9; --baseline:#c3c2b7; --border:rgba(11,11,11,0.10);
+    --series-actual:#2a78d6; --series-forecast:#2a78d6;
+    --good:#0ca30c; --warning:#fab219; --serious:#ec835a; --critical:#d03b3b;
+  }
+  [data-theme="dark"]{
+    color-scheme: dark;
+    --surface-1:#1a1a19; --page:#0d0d0d; --card:#232322;
+    --text-primary:#ffffff; --text-secondary:#c3c2b7; --text-muted:#898781;
+    --grid:#2c2c2a; --baseline:#383835; --border:rgba(255,255,255,0.10);
+    --series-actual:#3987e5; --series-forecast:#3987e5;
+    --good:#0ca30c; --warning:#fab219; --serious:#ec835a; --critical:#e66767;
+  }
+  *{margin:0;padding:0;box-sizing:border-box;}
+  body{
+    font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+    background: var(--page); color: var(--text-primary); line-height:1.5;
+  }
+  .wrap{max-width:1180px;margin:0 auto;padding:20px;}
+  header{
+    display:flex;justify-content:space-between;align-items:flex-start;
+    gap:16px;flex-wrap:wrap;margin-bottom:18px;
+  }
+  header h1{font-size:19px;font-weight:600;}
+  header p{font-size:13px;color:var(--text-secondary);margin-top:4px;}
+  .controls{display:flex;gap:10px;align-items:center;flex-wrap:wrap;}
+  select, .theme-toggle{
+    font-family:inherit;font-size:13px;padding:7px 10px;border-radius:6px;
+    border:1px solid var(--border);background:var(--card);color:var(--text-primary);
+    cursor:pointer;
+  }
+  .range-group{display:flex;gap:4px;background:var(--card);border:1px solid var(--border);border-radius:8px;padding:3px;}
+  .range-btn{
+    font-size:12.5px;padding:6px 12px;border-radius:6px;border:none;background:transparent;
+    color:var(--text-secondary);cursor:pointer;font-weight:500;
+  }
+  .range-btn.active{background:var(--series-actual);color:#fff;}
+
+  .kpi-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:14px;margin-bottom:16px;}
+  .kpi-card{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:16px 18px;}
+  .kpi-label{font-size:11.5px;color:var(--text-secondary);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:6px;}
+  .kpi-value{font-size:24px;font-weight:700;color:var(--text-primary);}
+  .kpi-sub{font-size:12.5px;color:var(--text-secondary);margin-top:4px;}
+  .kpi-sub.flag{color:var(--critical);font-weight:600;}
+  .kpi-sub.flag::before{content:"● ";}
+
+  .chart-card{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:18px 20px;margin-bottom:16px;}
+  .chart-card h3{font-size:14px;font-weight:600;margin-bottom:2px;}
+  .chart-card .hint{font-size:12px;color:var(--text-secondary);margin-bottom:12px;}
+  .chart-holder{height:380px;position:relative;}
+
+  .legend-row{display:flex;gap:18px;flex-wrap:wrap;margin-top:12px;padding-top:12px;border-top:1px solid var(--grid);font-size:12px;color:var(--text-secondary);}
+  .legend-item{display:flex;align-items:center;gap:6px;}
+  .swatch{width:14px;height:3px;border-radius:2px;display:inline-block;}
+  .swatch.dot{width:9px;height:9px;border-radius:50%;}
+
+  .panel-row{display:grid;grid-template-columns:1.1fr 1fr;gap:14px;}
+  @media (max-width:800px){.panel-row{grid-template-columns:1fr;}}
+  .panel{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:16px 18px;}
+  .panel h3{font-size:13px;font-weight:600;margin-bottom:10px;}
+  table{width:100%;border-collapse:collapse;font-size:12.5px;}
+  th{text-align:left;padding:6px 8px;color:var(--text-secondary);font-weight:600;text-transform:uppercase;font-size:11px;letter-spacing:.4px;border-bottom:1px solid var(--grid);}
+  td{padding:7px 8px;border-bottom:1px solid var(--grid);}
+  tr:last-child td{border-bottom:none;}
+  .badge{display:inline-block;padding:2px 8px;border-radius:20px;font-size:11px;font-weight:600;}
+  .badge.high{background:rgba(12,163,12,0.12);color:var(--good);}
+  .badge.medium{background:rgba(250,178,25,0.18);color:#a1710a;}
+  [data-theme="dark"] .badge.medium{color:var(--warning);}
+  .badge.low{background:rgba(208,59,59,0.12);color:var(--critical);}
+  footer{margin-top:18px;font-size:11.5px;color:var(--text-muted);text-align:center;}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <div>
+      <h1>Demand Spike Forecast — Google Trends</h1>
+      <p>Prediction test on one app (JSON dataset) — pipeline template for the full 100+ app portfolio</p>
+    </div>
+    <div class="controls">
+      <select id="appSelect"></select>
+      <div class="range-group" id="rangeGroup"></div>
+      <button class="theme-toggle" id="themeToggle">🌙 Dark</button>
+    </div>
+  </header>
+
+  <section class="kpi-row" id="kpiRow"></section>
+
+  <section class="chart-card">
+    <h3 id="chartTitle">Search interest over time</h3>
+    <p class="hint" id="chartHint"></p>
+    <div class="chart-holder"><canvas id="trendChart"></canvas></div>
+    <div class="legend-row">
+      <span class="legend-item"><span class="swatch" style="background:var(--series-actual)"></span> Actual (weekly)</span>
+      <span class="legend-item"><span class="swatch" style="background:var(--series-forecast);opacity:.55;border-top:2px dashed var(--series-forecast)"></span> Forecast (Prophet)</span>
+      <span class="legend-item"><span class="swatch" style="background:var(--series-forecast);opacity:.18"></span> Forecast uncertainty (80% interval)</span>
+      <span class="legend-item"><span class="swatch dot" style="background:var(--critical)"></span> Historical anomaly / active surge</span>
+      <span class="legend-item"><span class="swatch" style="background:var(--warning);opacity:.35"></span> Predicted spike window</span>
+    </div>
+  </section>
+
+  <section class="panel-row">
+    <div class="panel">
+      <h3>Predicted spike windows (next 12 months)</h3>
+      <table id="spikeTable">
+        <thead><tr><th>Window</th><th>Peak (est.)</th><th>Confidence</th></tr></thead>
+        <tbody></tbody>
+      </table>
+    </div>
+    <div class="panel">
+      <h3>Detected historical anomalies (in view)</h3>
+      <table id="anomalyTable">
+        <thead><tr><th>Week of</th><th>Value</th><th>Z-score</th></tr></thead>
+        <tbody></tbody>
+      </table>
+    </div>
+  </section>
+
+  <footer>Data source: Google Trends (weekly, 5-year window — Apify export or direct Trends CSV export) · Forecast: Prophet (yearly seasonality + damped/capped trend), backtested at ~7.7% mean error on peak prediction vs ~15.7% for a naive seasonal-ratio baseline · Shaded band = Prophet's 80% uncertainty interval, not a guarantee · Portfolio build — 15 keywords tracked, more added as data comes in</footer>
+</div>
+
+<script>
+/* ============== EMBEDDED DATA — one block per app, add more the same way ============== */
+let APPS = {};
+const APP_KEYS = ["ati_teas", "comptia_exam", "cna_exam", "aswb_exam", "nclex_exam", "ged_prep", "ptcb_exam", "medical_exam", "hesi_a2", "ancc_prep", "emt_exam", "servsafe", "praxis_exam", "asvab_exam", "real_estate_exam"];
+
+/* ============== RANGE DEFINITIONS ============== */
+const RANGES = [
+  { key:"1M", label:"1M",  trailingWeeks:8,  forecastWeeks:4  },
+  { key:"3M", label:"3M",  trailingWeeks:13, forecastWeeks:13 },
+  { key:"6M", label:"6M",  trailingWeeks:26, forecastWeeks:26 },
+  { key:"1Y", label:"1Y",  trailingWeeks:52, forecastWeeks:52 },
+  { key:"5Y", label:"5Y (all)", trailingWeeks:Infinity, forecastWeeks:52 },
+];
+
+let currentAppKey = Object.keys(APPS)[0];
+let currentRangeKey = "6M";
+let chart = null;
+
+function fmtDate(d){
+  return new Date(d+"T00:00:00").toLocaleDateString("en-US",{month:"short",day:"numeric",year:"numeric"});
+}
+function fmtShort(d){
+  return new Date(d+"T00:00:00").toLocaleDateString("en-US",{month:"short",day:"numeric"});
+}
+
+function buildAppSelect(){
+  const sel = document.getElementById("appSelect");
+  sel.innerHTML = "";
+  Object.entries(APPS).forEach(([key, app])=>{
+    const opt = document.createElement("option");
+    opt.value = key; opt.textContent = app.app_label;
+    sel.appendChild(opt);
+  });
+  sel.value = currentAppKey;
+  sel.addEventListener("change", e=>{ currentAppKey = e.target.value; render(); });
+}
+
+function buildRangeButtons(){
+  const g = document.getElementById("rangeGroup");
+  g.innerHTML = "";
+  RANGES.forEach(r=>{
+    const btn = document.createElement("button");
+    btn.className = "range-btn" + (r.key===currentRangeKey ? " active":"");
+    btn.textContent = r.label;
+    btn.addEventListener("click", ()=>{ currentRangeKey = r.key; render(); });
+    g.appendChild(btn);
+  });
+}
+
+function getSlice(app, rangeKey){
+  const range = RANGES.find(r=>r.key===rangeKey);
+  const history = app.history.slice(range.trailingWeeks===Infinity ? 0 : -range.trailingWeeks);
+  const forecast = app.forecast.slice(0, range.forecastWeeks);
+  return { history, forecast, range };
+}
+
+function computeKPIs(app){
+  const nextWindow = app.spike_windows[0];
+  return { baseline: app.recent_baseline, yoy: app.yoy_growth_pct, nextWindow };
+}
+
+function renderKPIs(app){
+  const k = computeKPIs(app);
+  const row = document.getElementById("kpiRow");
+  const surge = app.active_surge;
+  row.innerHTML = `
+    <div class="kpi-card">
+      <div class="kpi-label">Latest reading</div>
+      <div class="kpi-value">${surge ? surge.value : app.history[app.history.length-1].value}</div>
+      <div class="kpi-sub ${surge ? 'flag':''}">${surge ? "Partial week — tracking above baseline" : "Last complete week"}</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-label">Recent baseline (8-wk avg)</div>
+      <div class="kpi-value">${k.baseline}</div>
+      <div class="kpi-sub">Google Trends index, 0–100 scale</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-label">YoY growth</div>
+      <div class="kpi-value">${k.yoy > 0 ? "+" : ""}${k.yoy}%</div>
+      <div class="kpi-sub">vs. same weeks last year</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-label">Next predicted spike</div>
+      <div class="kpi-value" style="font-size:17px;">${k.nextWindow ? fmtShort(k.nextWindow.start)+" – "+fmtShort(k.nextWindow.end) : "None in next 12mo"}</div>
+      <div class="kpi-sub">${k.nextWindow ? "Confidence: "+k.nextWindow.confidence : ""}</div>
+    </div>
+  `;
+}
+
+function renderTables(app, visibleHistory){
+  const spikeBody = document.querySelector("#spikeTable tbody");
+  spikeBody.innerHTML = app.spike_windows.map(w=>`
+    <tr>
+      <td>${fmtShort(w.start)} – ${fmtShort(w.end)}</td>
+      <td>${w.peak_value} (est.)</td>
+      <td><span class="badge ${w.confidence}">${w.confidence}</span></td>
+    </tr>`).join("") || `<tr><td colspan="3">No spike window detected in the next 12 months.</td></tr>`;
+
+  const visibleDates = new Set(visibleHistory.map(h=>h.date));
+  const anomBody = document.querySelector("#anomalyTable tbody");
+  const inView = app.anomalies.filter(a=>visibleDates.has(a.date));
+  anomBody.innerHTML = inView.slice(-10).reverse().map(a=>`
+    <tr><td>${fmtDate(a.date)}</td><td>${a.value}</td><td>+${a.z}σ</td></tr>`).join("")
+    || `<tr><td colspan="3">No anomalies in the selected window.</td></tr>`;
+}
+
+function render(){
+  buildRangeButtons();
+  const app = APPS[currentAppKey];
+  const { history, forecast, range } = getSlice(app, currentRangeKey);
+
+  document.getElementById("chartTitle").textContent = `${app.app_label} — "${app.keyword}"`;
+  document.getElementById("chartHint").textContent =
+    `Showing ${range.label==='5Y (all)' ? 'full 5-year history' : 'last '+range.label} of actual search interest plus a ${range.forecastWeeks}-week forward projection.`;
+
+  renderKPIs(app);
+
+  // build combined label axis: history dates + forecast dates
+  const labels = [...history.map(h=>h.date), ...forecast.map(f=>f.date)];
+
+  const actualData = [...history.map(h=>h.value), ...forecast.map(()=>null)];
+  const forecastData = [...history.map(()=>null), ...forecast.map(f=>f.value)];
+  const bandLower = [...history.map(()=>null), ...forecast.map(f=>f.yhat_lower)];
+  const bandUpper = [...history.map(()=>null), ...forecast.map(f=>f.yhat_upper)];
+  // bridge points so the dashed line + band connect to the last actual point
+  if (history.length && forecast.length){
+    forecastData[history.length-1] = history[history.length-1].value;
+    bandLower[history.length-1] = history[history.length-1].value;
+    bandUpper[history.length-1] = history[history.length-1].value;
+  }
+
+  const anomalySet = new Map(app.anomalies.map(a=>[a.date, a]));
+  const surgeDate = app.active_surge ? app.active_surge.date : null;
+
+  const pointColors = labels.map(d=>{
+    if (d===surgeDate) return getCSS('--critical');
+    return anomalySet.has(d) ? getCSS('--critical') : "transparent";
+  });
+  const pointRadii = labels.map(d => (anomalySet.has(d) || d===surgeDate) ? 5 : 0);
+
+  const annotations = {};
+  app.spike_windows.forEach((w,i)=>{
+    if (w.start > labels[labels.length-1] || w.end < labels[0]) return;
+    annotations["spike"+i] = {
+      type:"box",
+      xMin: w.start, xMax: w.end,
+      backgroundColor: hexA(getCSS('--warning'), 0.16),
+      borderColor: hexA(getCSS('--warning'), 0.45),
+      borderWidth:1,
+      label:{ display:true, content:[`Spike?`,`(${w.confidence})`], position:"center",
+        font:{size:10,weight:"600"}, color:getCSS('--text-secondary'), yAdjust:0,
+        backgroundColor: hexA(getCSS('--card'), 0.85) }
+    };
+  });
+  if (surgeDate && surgeDate >= labels[0] && surgeDate <= labels[labels.length-1]){
+    annotations["surgeLine"] = {
+      type:"line", xMin:surgeDate, xMax:surgeDate,
+      borderColor: getCSS('--critical'), borderWidth:1, borderDash:[4,3],
+      label:{display:true, content:"Today", position:"end", font:{size:10}, color:getCSS('--text-secondary'), yAdjust:10}
+    };
+  }
+
+  const ctx = document.getElementById("trendChart").getContext("2d");
+  if (chart) chart.destroy();
+  chart = new Chart(ctx, {
+    type:"line",
+    data:{
+      labels,
+      datasets:[
+        {
+          label:"Actual",
+          data: actualData,
+          borderColor: getCSS('--series-actual'),
+          backgroundColor: hexA(getCSS('--series-actual'), 0.08),
+          borderWidth:2, pointRadius: pointRadii, pointBackgroundColor: pointColors,
+          pointBorderColor: pointColors, spanGaps:false, tension:0.25, fill:true,
+          order:1,
+        },
+        {
+          label:"Forecast range (lower)",
+          data: bandLower,
+          borderWidth:0, pointRadius:0, spanGaps:false, tension:0.25,
+          fill:false, order:3,
+        },
+        {
+          label:"Forecast range (upper)",
+          data: bandUpper,
+          borderWidth:0, pointRadius:0, spanGaps:false, tension:0.25,
+          backgroundColor: hexA(getCSS('--series-forecast'), 0.12),
+          fill:"-1", order:3,
+        },
+        {
+          label:"Forecast",
+          data: forecastData,
+          borderColor: getCSS('--series-forecast'),
+          borderDash:[6,4], borderWidth:2, pointRadius:0, order:2,
+          spanGaps:false, tension:0.25, fill:false,
+        }
+      ]
+    },
+    options:{
+      responsive:true, maintainAspectRatio:false,
+      interaction:{ mode:"index", intersect:false },
+      plugins:{
+        legend:{ display:false },
+        tooltip:{
+          callbacks:{
+            title: (items)=> fmtDate(items[0].label),
+            label: (item)=>{
+              if (item.raw===null) return null;
+              if (item.dataset.label.startsWith("Forecast range")) return null;
+              const d = item.label;
+              let extra = "";
+              if (anomalySet.has(d)) extra = `  ·  anomaly +${anomalySet.get(d).z}σ`;
+              if (d===surgeDate) extra = "  ·  active surge (partial week)";
+              return `${item.dataset.label}: ${item.raw}${extra}`;
+            }
+          }
+        },
+        annotation:{ annotations }
+      },
+      scales:{
+        x:{ grid:{ display:false }, ticks:{ color:getCSS('--text-muted'), maxRotation:0, autoSkip:true, maxTicksLimit:10,
+              callback:(val,idx)=>fmtShort(labels[idx]) } },
+        y:{ beginAtZero:true, max:100, grid:{ color:getCSS('--grid') }, ticks:{ color:getCSS('--text-muted') } }
+      }
+    }
+  });
+
+  renderTables(app, history);
+}
+
+function getCSS(varName){
+  return getComputedStyle(document.body).getPropertyValue(varName).trim();
+}
+function hexA(hex, alpha){
+  hex = hex.replace('#','');
+  if (hex.length===3) hex = hex.split('').map(c=>c+c).join('');
+  const r=parseInt(hex.slice(0,2),16), g=parseInt(hex.slice(2,4),16), b=parseInt(hex.slice(4,6),16);
+  return `rgba(${r},${g},${b},${alpha})`;
+}
+
+document.getElementById("themeToggle").addEventListener("click", ()=>{
+  const isDark = document.body.getAttribute("data-theme")==="dark";
+  document.body.setAttribute("data-theme", isDark ? "light" : "dark");
+  document.getElementById("themeToggle").textContent = isDark ? "🌙 Dark" : "☀️ Light";
+  render();
+});
+
+async function loadData(){
+  const entries = await Promise.all(APP_KEYS.map(async key => {
+    try {
+      const res = await fetch(`data/${key}_dashboard_data.json`, {cache: "no-cache"});
+      if (!res.ok) throw new Error(res.status);
+      return [key, await res.json()];
+    } catch (e) {
+      console.error("Failed to load", key, e);
+      return null;
+    }
+  }));
+  APPS = Object.fromEntries(entries.filter(Boolean));
+  currentAppKey = Object.keys(APPS)[0];
+}
+
+loadData().then(()=>{
+  buildAppSelect();
+  render();
+});
+</script>
+</body>
+</html>

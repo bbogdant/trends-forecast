@@ -1,0 +1,54 @@
+name: Weekly Trends Refresh
+
+# Google Trends data itself only updates on a weekly cadence, so a weekly
+# refresh keeps the dashboard current without wasting Apify usage.
+on:
+  schedule:
+    - cron: "0 6 * * 1"   # every Monday, 06:00 UTC
+  workflow_dispatch: {}    # lets you trigger a manual run from the Actions tab
+
+permissions:
+  contents: write
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      # Prophet's first import compiles a cmdstan binary, which is slow
+      # (~1-2 min). Caching it means only the very first run pays that cost.
+      - name: Cache cmdstan
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cmdstan
+            ~/.cache/cmdstanpy
+          key: cmdstan-${{ runner.os }}-${{ hashFiles('requirements.txt') }}
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Run scrape + forecast for all tracked keywords
+        env:
+          APIFY_TOKEN: ${{ secrets.APIFY_TOKEN }}
+        run: |
+          python scripts/scrape_and_forecast.py \
+            "ATI TEAS" "Comptia Exam" "CNA Exam" "ASWB Exam" "NCLEX Exam" \
+            "GED PREP" "PTCB Exam" "Medical Exam" "HESI A2" "ANCC Prep" \
+            "EMT Exam" "ServSafe" "PRAXIS Exam" "ASVAB EXAM" "Real Estate Exam"
+
+      - name: Commit updated data
+        run: |
+          git config user.name "trends-bot"
+          git config user.email "trends-bot@users.noreply.github.com"
+          git add docs/data/*.json
+          git diff --cached --quiet && echo "No data changes this week." && exit 0
+          git commit -m "Weekly Trends refresh $(date -u +%Y-%m-%d)"
+          git push
