@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Upcoming Peaks — Trend Dashboard</title>
+<style>
+  :root{
+    color-scheme: light;
+    --surface-1:#fcfcfb; --page:#f9f9f7; --card:#ffffff;
+    --text-primary:#0b0b0b; --text-secondary:#52514e; --text-muted:#898781;
+    --grid:#e1e0d9; --border:rgba(11,11,11,0.10);
+    --series-actual:#2a78d6;
+    --good:#0ca30c; --warning:#fab219; --serious:#ec835a; --critical:#d03b3b;
+  }
+  [data-theme="dark"]{
+    color-scheme: dark;
+    --surface-1:#1a1a19; --page:#0d0d0d; --card:#232322;
+    --text-primary:#ffffff; --text-secondary:#c3c2b7; --text-muted:#898781;
+    --grid:#2c2c2a; --border:rgba(255,255,255,0.10);
+    --series-actual:#3987e5;
+    --good:#0ca30c; --warning:#fab219; --serious:#ec835a; --critical:#e66767;
+  }
+  *{margin:0;padding:0;box-sizing:border-box;}
+  body{font-family: system-ui, -apple-system, "Segoe UI", sans-serif; background: var(--page); color: var(--text-primary); line-height:1.5;}
+  .wrap{max-width:1180px;margin:0 auto;padding:20px;}
+  header{display:flex;justify-content:space-between;align-items:flex-start;gap:16px;flex-wrap:wrap;margin-bottom:18px;}
+  header h1{font-size:19px;font-weight:600;}
+  header p{font-size:13px;color:var(--text-secondary);margin-top:4px;}
+  header a{color:var(--series-actual);text-decoration:none;font-weight:600;}
+  .theme-toggle{font-family:inherit;font-size:13px;padding:7px 10px;border-radius:6px;border:1px solid var(--border);background:var(--card);color:var(--text-primary);cursor:pointer;}
+  .panel{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:16px 18px;margin-bottom:16px;}
+  .panel h3{font-size:14px;font-weight:600;margin-bottom:4px;}
+  .panel .hint{font-size:12px;color:var(--text-secondary);margin-bottom:14px;}
+  table{width:100%;border-collapse:collapse;font-size:13px;}
+  th{text-align:left;padding:8px 10px;color:var(--text-secondary);font-weight:600;text-transform:uppercase;font-size:11px;letter-spacing:.4px;border-bottom:1px solid var(--grid);cursor:pointer;user-select:none;}
+  th:hover{color:var(--text-primary);}
+  td{padding:9px 10px;border-bottom:1px solid var(--grid);}
+  tr:last-child td{border-bottom:none;}
+  tr.active-row{background:rgba(12,163,12,0.07);}
+  .badge{display:inline-block;padding:2px 9px;border-radius:20px;font-size:11px;font-weight:600;white-space:nowrap;}
+  .badge.high{background:rgba(12,163,12,0.12);color:var(--good);}
+  .badge.medium{background:rgba(250,178,25,0.18);color:#a1710a;}
+  [data-theme="dark"] .badge.medium{color:var(--warning);}
+  .badge.low{background:rgba(208,59,59,0.12);color:var(--critical);}
+  .badge.now{background:rgba(12,163,12,0.18);color:var(--good);}
+  .badge.soon{background:rgba(250,178,25,0.18);color:#a1710a;}
+  [data-theme="dark"] .badge.soon{color:var(--warning);}
+  .badge.later{background:rgba(137,135,129,0.15);color:var(--text-secondary);}
+  .badge.stable{background:rgba(12,163,12,0.1);color:var(--good);}
+  .badge.moderate{background:rgba(250,178,25,0.15);color:#a1710a;}
+  [data-theme="dark"] .badge.moderate{color:var(--warning);}
+  .badge.unstable{background:rgba(208,59,59,0.1);color:var(--critical);}
+  .applink{color:var(--series-actual);text-decoration:none;font-weight:600;}
+  footer{margin-top:18px;font-size:11.5px;color:var(--text-muted);text-align:center;}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div>
+      <h1>Upcoming Peaks — All Apps</h1>
+      <p>Which keywords are about to enter (or are already in) their recommended marketing push window.</p>
+      <p><a href="index.html">← Back to per-app dashboard</a></p>
+    </div>
+    <button class="theme-toggle" id="themeToggle">🌙 Dark</button>
+  </header>
+
+  <section class="panel">
+    <h3>Recommended marketing windows, next 12 months</h3>
+    <p class="hint">Sorted by how soon marketing should start. "Start now" = today falls inside the recommended push window (peak date buffered by the keyword's own timing-error margin — tighter for keywords with stable annual seasonality, wider for unstable ones). Click a column header to re-sort.</p>
+    <table id="upcomingTable">
+      <thead>
+        <tr>
+          <th data-key="app_label">App</th>
+          <th data-key="stability">Seasonality</th>
+          <th data-key="peak_date">Predicted peak</th>
+          <th data-key="confidence">Confidence</th>
+          <th data-key="mw_start">Marketing window</th>
+          <th data-key="status_rank">Status</th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+  </section>
+
+  <footer>Data source: Google Trends (weekly) via the same pipeline as the per-app dashboard · Marketing window = predicted peak date ± an empirically-backtested timing-error buffer (see seasonality column) · Refreshed weekly by the same GitHub Actions job</footer>
+</div>
+
+<script>
+const APP_KEYS = ["ati_teas", "comptia_exam", "cna_exam", "aswb_exam", "nclex_exam", "ged_prep", "ptcb_exam", "medical_exam", "hesi_a2", "ancc_prep", "emt_exam", "servsafe", "praxis_exam", "asvab_exam", "real_estate_exam"];
+
+function fmtShort(d){
+  return new Date(d+"T00:00:00").toLocaleDateString("en-US",{month:"short",day:"numeric",year:"numeric"});
+}
+
+let rows = [];
+let sortKey = "status_rank";
+let sortAsc = true;
+
+function buildRows(apps){
+  const today = apps.length ? apps[0].last_actual_date : new Date().toISOString().slice(0,10);
+  const out = [];
+  apps.forEach(app=>{
+    // pick the earliest spike window whose marketing push window hasn't ended yet
+    const upcoming = (app.spike_windows||[]).filter(w=>w.marketing_window && w.marketing_window.end >= today)
+      .sort((a,b)=> a.marketing_window.start.localeCompare(b.marketing_window.start));
+    const w = upcoming[0];
+    const stability = app.seasonal_stability_class || "moderate";
+    if (!w){
+      out.push({
+        app_label: app.app_label, stability, peak_date: null, confidence: null,
+        mw_start: null, mw_end: null, status: "No window in next 12mo", status_rank: 9999, status_class: "later",
+      });
+      return;
+    }
+    const mw = w.marketing_window;
+    let status, status_class, status_rank;
+    if (mw.start <= today && today <= mw.end){
+      status = "Start now"; status_class = "now"; status_rank = 0;
+    } else if (mw.start > today) {
+      const days = (new Date(mw.start) - new Date(today)) / 86400000;
+      const wks = Math.round(days/7);
+      status = `In ${wks} wk${wks===1?"":"s"}`;
+      status_class = wks <= 4 ? "soon" : "later";
+      status_rank = days;
+    } else {
+      status = "Window passed"; status_class = "later"; status_rank = 8000;
+    }
+    out.push({
+      app_label: app.app_label, stability, peak_date: w.peak_date, confidence: w.confidence,
+      mw_start: mw.start, mw_end: mw.end, status, status_class, status_rank,
+    });
+  });
+  return out;
+}
+
+function render(){
+  const sorted = [...rows].sort((a,b)=>{
+    let av = a[sortKey], bv = b[sortKey];
+    if (av === null) av = sortKey === "status_rank" ? 1e9 : "";
+    if (bv === null) bv = sortKey === "status_rank" ? 1e9 : "";
+    if (av < bv) return sortAsc ? -1 : 1;
+    if (av > bv) return sortAsc ? 1 : -1;
+    return 0;
+  });
+  const tbody = document.querySelector("#upcomingTable tbody");
+  tbody.innerHTML = sorted.map(r=>`
+    <tr class="${r.status_class==='now' ? 'active-row' : ''}">
+      <td>${r.app_label}</td>
+      <td><span class="badge ${r.stability}">${r.stability}</span></td>
+      <td>${r.peak_date ? fmtShort(r.peak_date) : "—"}</td>
+      <td>${r.confidence ? `<span class="badge ${r.confidence}">${r.confidence}</span>` : "—"}</td>
+      <td>${r.mw_start ? fmtShort(r.mw_start)+" – "+fmtShort(r.mw_end) : "—"}</td>
+      <td><span class="badge ${r.status_class}">${r.status}</span></td>
+    </tr>`).join("");
+}
+
+document.querySelectorAll("#upcomingTable th").forEach(th=>{
+  th.addEventListener("click", ()=>{
+    const key = th.dataset.key;
+    if (sortKey === key) sortAsc = !sortAsc; else { sortKey = key; sortAsc = true; }
+    render();
+  });
+});
+
+document.getElementById("themeToggle").addEventListener("click", ()=>{
+  const isDark = document.body.getAttribute("data-theme")==="dark";
+  document.body.setAttribute("data-theme", isDark ? "light" : "dark");
+  document.getElementById("themeToggle").textContent = isDark ? "🌙 Dark" : "☀️ Light";
+});
+
+async function loadData(){
+  const entries = await Promise.all(APP_KEYS.map(async key => {
+    try {
+      const res = await fetch(`data/${key}_dashboard_data.json`, {cache: "no-cache"});
+      if (!res.ok) throw new Error(res.status);
+      return await res.json();
+    } catch (e) {
+      console.error("Failed to load", key, e);
+      return null;
+    }
+  }));
+  const apps = entries.filter(Boolean);
+  rows = buildRows(apps);
+  render();
+}
+
+loadData();
+</script>
+</body>
+</html>

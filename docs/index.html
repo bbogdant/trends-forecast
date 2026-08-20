@@ -89,6 +89,7 @@
     <div>
       <h1>Demand Spike Forecast — Google Trends</h1>
       <p>Prediction test on one app (JSON dataset) — pipeline template for the full 100+ app portfolio</p>
+      <p><a href="upcoming.html" style="color:var(--series-actual);text-decoration:none;font-weight:600;">→ Upcoming peaks across all apps</a></p>
     </div>
     <div class="controls">
       <select id="appSelect"></select>
@@ -109,6 +110,7 @@
       <span class="legend-item"><span class="swatch" style="background:var(--series-forecast);opacity:.18"></span> Forecast uncertainty (80% interval)</span>
       <span class="legend-item"><span class="swatch dot" style="background:var(--critical)"></span> Historical anomaly / active surge</span>
       <span class="legend-item"><span class="swatch" style="background:var(--warning);opacity:.35"></span> Predicted spike window</span>
+      <span class="legend-item"><span class="swatch" style="background:var(--good);opacity:.22"></span> Recommended marketing push window</span>
     </div>
   </section>
 
@@ -116,7 +118,7 @@
     <div class="panel">
       <h3>Predicted spike windows (next 12 months)</h3>
       <table id="spikeTable">
-        <thead><tr><th>Window</th><th>Peak (est.)</th><th>Confidence</th></tr></thead>
+        <thead><tr><th>Window</th><th>Peak (est.)</th><th>Confidence</th><th>Start marketing</th></tr></thead>
         <tbody></tbody>
       </table>
     </div>
@@ -190,7 +192,10 @@ function getSlice(app, rangeKey){
 
 function computeKPIs(app){
   const nextWindow = app.spike_windows[0];
-  return { baseline: app.recent_baseline, yoy: app.yoy_growth_pct, nextWindow };
+  const today = app.last_actual_date;
+  // first spike window whose marketing push window hasn't fully ended yet
+  const nextMarketing = app.spike_windows.find(w => w.marketing_window && w.marketing_window.end >= today);
+  return { baseline: app.recent_baseline, yoy: app.yoy_growth_pct, nextWindow, nextMarketing };
 }
 
 function renderKPIs(app){
@@ -218,6 +223,11 @@ function renderKPIs(app){
       <div class="kpi-value" style="font-size:17px;">${k.nextWindow ? fmtShort(k.nextWindow.start)+" – "+fmtShort(k.nextWindow.end) : "None in next 12mo"}</div>
       <div class="kpi-sub">${k.nextWindow ? "Confidence: "+k.nextWindow.confidence : ""}</div>
     </div>
+    <div class="kpi-card">
+      <div class="kpi-label">Recommended marketing start</div>
+      <div class="kpi-value" style="font-size:17px;color:var(--good);">${k.nextMarketing ? fmtShort(k.nextMarketing.marketing_window.start) : "—"}</div>
+      <div class="kpi-sub">${k.nextMarketing ? `Push through ${fmtShort(k.nextMarketing.marketing_window.end)} (seasonality: ${app.seasonal_stability_class || "n/a"})` : "No upcoming window"}</div>
+    </div>
   `;
 }
 
@@ -228,7 +238,8 @@ function renderTables(app, visibleHistory){
       <td>${fmtShort(w.start)} – ${fmtShort(w.end)}</td>
       <td>${w.peak_value} (est.)</td>
       <td><span class="badge ${w.confidence}">${w.confidence}</span></td>
-    </tr>`).join("") || `<tr><td colspan="3">No spike window detected in the next 12 months.</td></tr>`;
+      <td>${w.marketing_window ? fmtShort(w.marketing_window.start)+" – "+fmtShort(w.marketing_window.end) : "—"}</td>
+    </tr>`).join("") || `<tr><td colspan="4">No spike window detected in the next 12 months.</td></tr>`;
 
   const visibleDates = new Set(visibleHistory.map(h=>h.date));
   const anomBody = document.querySelector("#anomalyTable tbody");
@@ -248,6 +259,7 @@ function render(){
     `Showing ${range.label==='5Y (all)' ? 'full 5-year history' : 'last '+range.label} of actual search interest plus a ${range.forecastWeeks}-week forward projection.`;
 
   renderKPIs(app);
+  renderTables(app, history);
 
   // build combined label axis: history dates + forecast dates
   const labels = [...history.map(h=>h.date), ...forecast.map(f=>f.date)];
@@ -274,6 +286,19 @@ function render(){
 
   const annotations = {};
   app.spike_windows.forEach((w,i)=>{
+    const mw = w.marketing_window;
+    if (mw && !(mw.start > labels[labels.length-1] || mw.end < labels[0])){
+      annotations["marketing"+i] = {
+        type:"box",
+        xMin: mw.start, xMax: mw.end,
+        backgroundColor: hexA(getCSS('--good'), 0.14),
+        borderColor: hexA(getCSS('--good'), 0.4),
+        borderWidth:1, borderDash:[3,3],
+        label:{ display:true, content:["Marketing push"], position:"start",
+          font:{size:9,weight:"600"}, color:getCSS('--good'), yAdjust:-8, xAdjust:4,
+          backgroundColor: hexA(getCSS('--card'), 0.85) }
+      };
+    }
     if (w.start > labels[labels.length-1] || w.end < labels[0]) return;
     annotations["spike"+i] = {
       type:"box",

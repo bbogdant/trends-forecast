@@ -19,10 +19,21 @@ import sys, json, statistics, warnings, logging
 warnings.filterwarnings("ignore")
 logging.getLogger("cmdstanpy").setLevel(logging.WARNING)
 logging.getLogger("prophet").setLevel(logging.WARNING)
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, date
+from itertools import combinations
 import pandas as pd
 import numpy as np
 from prophet import Prophet
+
+# marketing-window buffers, keyed by how stable a keyword's annual seasonality
+# empirically is -- see the Aug 2026 Glimpse-style backtest: peak-timing error
+# averages ~3.7-4.8 weeks and is worse for keywords with unstable seasonality,
+# so the "start marketing now" window is buffered wider for those.
+MARKETING_BUFFERS = {
+    "stable":   {"before": 3, "after": 2},
+    "moderate": {"before": 4, "after": 3},
+    "unstable": {"before": 5, "after": 4},
+}
 
 FORECAST_WEEKS = 52
 GT_SCALE_MAX = 100          # Google Trends index is always 0-100
@@ -95,6 +106,47 @@ def historical_anomalies(complete):
         if z >= ANOMALY_Z:
             out.append({"date": complete[i]["date"], "value": vals[i], "z": round(z, 2)})
     return out
+
+
+def seasonal_stability(complete):
+    """Mean pairwise year-over-year correlation of the week-of-year profile,
+    computed on history only (no forecast/future data involved)."""
+    df = pd.DataFrame(complete)
+    df["ds"] = pd.to_datetime(df["date"])
+    df["woy"] = df["ds"].dt.isocalendar().week.astype(int)
+    df["yr"] = df["ds"].dt.isocalendar().year.astype(int)
+    profs = {yr: g.set_index("woy")["value"].reindex(range(1, 53))
+             for yr, g in df.groupby("yr") if len(g) >= 45}
+    if len(profs) < 2:
+        return 0.3
+    rs = []
+    for a, b in combinations(sorted(profs), 2):
+        pa, pb = profs[a], profs[b]
+        m = pa.notna() & pb.notna()
+        if m.sum() > 30 and pa[m].std() > 0 and pb[m].std() > 0:
+            rs.append(np.corrcoef(pa[m], pb[m])[0, 1])
+    return float(np.mean(rs)) if rs else 0.3
+
+
+def stability_class(stability):
+    if stability >= 0.4:
+        return "stable"
+    if stability >= 0.15:
+        return "moderate"
+    return "unstable"
+
+
+def add_marketing_windows(spike_windows, stability_cls):
+    buf = MARKETING_BUFFERS[stability_cls]
+    for w in spike_windows:
+        peak = date.fromisoformat(w["peak_date"])
+        w["marketing_window"] = {
+            "start": (peak - timedelta(weeks=buf["before"])).isoformat(),
+            "end": (peak + timedelta(weeks=buf["after"])).isoformat(),
+            "buffer_before_weeks": buf["before"],
+            "buffer_after_weeks": buf["after"],
+        }
+    return spike_windows
 
 
 def fit_prophet_forecast(complete):
@@ -215,6 +267,9 @@ def main():
     anomalies = historical_anomalies(complete)
     forecast, residuals, cap = fit_prophet_forecast(complete)
     spike_windows = detect_spike_windows(forecast, recent_baseline, last_date)
+    stability = seasonal_stability(complete)
+    stab_cls = stability_class(stability)
+    spike_windows = add_marketing_windows(spike_windows, stab_cls)
 
     output = {
         "keyword": keyword,
@@ -222,6 +277,8 @@ def main():
         "last_actual_date": complete[-1]["date"],
         "recent_baseline": round(recent_baseline, 1),
         "yoy_growth_pct": round(yoy_growth * 100, 1),
+        "seasonal_stability": round(stability, 3),
+        "seasonal_stability_class": stab_cls,
         "forecast_engine": "prophet_logistic_v1",
         "logistic_cap": round(cap, 1),
         "history": [{"date": p["date"], "value": p["value"]} for p in complete],
