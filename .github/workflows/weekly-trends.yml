@@ -41,7 +41,7 @@ jobs:
         run: |
           python scripts/scrape_and_forecast.py \
             "ATI TEAS" "Comptia Exam" "CNA Exam" "ASWB Exam" "NCLEX Exam" \
-            "GED PREP" "PTCB Exam" "Medical Exam" "HESI A2" "ANCC Prep" \
+            "GED PREP" "PTCB Exam" "Medical Exam" "HESI A2" "ANCC Exam" \
             "EMT Exam" "ServSafe" "PRAXIS Exam" "ASVAB EXAM" "Real Estate Exam"
 
       - name: Commit updated data
