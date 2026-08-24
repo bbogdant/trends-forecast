@@ -44,6 +44,11 @@ jobs:
             "GED PREP" "PTCB Exam" "Medical Exam" "HESI A2" "ANCC Exam" \
             "EMT Exam" "ServSafe" "PRAXIS Exam" "ASVAB EXAM" "Real Estate Exam"
 
+      # The job can run for several minutes (Apify actor + Prophet fits).
+      # If you push a commit to main while it's running, a plain "git push"
+      # would get rejected ("fetch first") because the runner's checkout is
+      # now stale. Rebase onto the latest main right before pushing, with a
+      # couple of retries, so this never blocks a week's data refresh.
       - name: Commit updated data
         run: |
           git config user.name "trends-bot"
@@ -51,4 +56,17 @@ jobs:
           git add docs/data/*.json
           git diff --cached --quiet && echo "No data changes this week." && exit 0
           git commit -m "Weekly Trends refresh $(date -u +%Y-%m-%d)"
-          git push
+          for i in 1 2 3; do
+            git fetch origin main
+            if git rebase origin/main && git push; then
+              echo "Pushed successfully."
+              break
+            fi
+            echo "Push attempt $i failed (likely a concurrent push) -- retrying in 5s..."
+            git rebase --abort 2>/dev/null || true
+            sleep 5
+            if [ "$i" = "3" ]; then
+              echo "Push failed after 3 attempts."
+              exit 1
+            fi
+          done
