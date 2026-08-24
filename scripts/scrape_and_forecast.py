@@ -25,7 +25,8 @@ import urllib.error
 # Make sure compute_forecast.py (same folder) is importable regardless of the
 # working directory the script is invoked from (e.g. repo root in CI).
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-from compute_forecast import historical_anomalies, fit_prophet_forecast, detect_spike_windows
+from compute_forecast import (historical_anomalies, fit_prophet_forecast, detect_spike_windows,
+                               seasonal_stability, stability_class, add_marketing_windows)
 
 ACTOR = "agenscrape~google-trends-scraper"
 API_BASE = "https://api.apify.com/v2"
@@ -108,6 +109,9 @@ def process_entry(entry, app_label=None):
     anomalies = historical_anomalies(complete)
     forecast, residuals, cap = fit_prophet_forecast(complete)
     spike_windows = detect_spike_windows(forecast, recent_baseline, last_date)
+    stability = seasonal_stability(complete)
+    stab_cls = stability_class(stability)
+    spike_windows = add_marketing_windows(spike_windows, stab_cls)
 
     return {
         "keyword": keyword,
@@ -115,6 +119,8 @@ def process_entry(entry, app_label=None):
         "last_actual_date": complete[-1]["date"],
         "recent_baseline": round(recent_baseline, 1),
         "yoy_growth_pct": round(yoy_growth * 100, 1),
+        "seasonal_stability": round(stability, 3),
+        "seasonal_stability_class": stab_cls,
         "forecast_engine": "prophet_logistic_v1",
         "logistic_cap": round(cap, 1),
         "history": [{"date": p["date"], "value": p["value"]} for p in complete],
