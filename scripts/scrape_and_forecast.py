@@ -25,8 +25,8 @@ import urllib.error
 # Make sure compute_forecast.py (same folder) is importable regardless of the
 # working directory the script is invoked from (e.g. repo root in CI).
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-from compute_forecast import (historical_anomalies, fit_prophet_forecast, detect_spike_windows,
-                               seasonal_stability, stability_class, add_marketing_windows)
+from compute_forecast import build_forecast_payload, DEFAULT_LEDGER_PATH
+import peak_ledger
 
 ACTOR = "agenscrape~google-trends-scraper"
 API_BASE = "https://api.apify.com/v2"
@@ -82,7 +82,14 @@ def run_actor(token, keywords, geo="US", time_range="today 5-y"):
     return items
 
 
-def process_entry(entry, app_label=None):
+def process_entry(entry, app_label=None, ledger=None, ledger_path=None, slug=None):
+    """Parse one Apify dataset item and run it through the shared pipeline.
+
+    The forecasting logic itself lives in compute_forecast.build_forecast_payload
+    so this entrypoint and the manual one cannot drift apart -- they did once
+    before, which is how the marketing-window feature shipped without actually
+    reaching the weekly cron output.
+    """
     keyword = entry["keyword"]
     points = []
     for p in entry.get("interestOverTime", []):
@@ -96,43 +103,10 @@ def process_entry(entry, app_label=None):
     breakouts = [r["query"] for r in entry.get("relatedSearches", {}).get("rising", [])
                  if r.get("formattedValue") == "Breakout"]
 
-    complete = [p for p in points if not p["partial"]]
-    last_partial = points[-1] if points and points[-1]["partial"] else None
-
-    recent_baseline = statistics.mean(p["value"] for p in complete[-8:])
-    last_date = datetime.fromisoformat(complete[-1]["date"])
-    one_year_ago = last_date - timedelta(days=365)
-    prior_window = [p["value"] for p in complete if abs((datetime.fromisoformat(p["date"]) - one_year_ago).days) <= 28]
-    prior_mean = statistics.mean(prior_window) if prior_window else 0.0
-    yoy_growth = ((recent_baseline - prior_mean) / prior_mean) if prior_mean > 0 else 0.0
-
-    anomalies = historical_anomalies(complete)
-    forecast, residuals, cap = fit_prophet_forecast(complete)
-    spike_windows = detect_spike_windows(forecast, recent_baseline, last_date)
-    stability = seasonal_stability(complete)
-    stab_cls = stability_class(stability)
-    spike_windows = add_marketing_windows(spike_windows, stab_cls)
-
-    return {
-        "keyword": keyword,
-        "app_label": app_label or keyword.title(),
-        "last_actual_date": complete[-1]["date"],
-        "recent_baseline": round(recent_baseline, 1),
-        "yoy_growth_pct": round(yoy_growth * 100, 1),
-        "seasonal_stability": round(stability, 3),
-        "seasonal_stability_class": stab_cls,
-        "forecast_engine": "prophet_logistic_v1",
-        "logistic_cap": round(cap, 1),
-        "history": [{"date": p["date"], "value": p["value"]} for p in complete],
-        "active_surge": ({
-            "date": last_partial["date"], "value": last_partial["value"],
-            "note": f"Partial current week — breakout queries: {', '.join(breakouts[:3])}" if breakouts else "Partial current week."
-        } if last_partial else None),
-        "anomalies": anomalies,
-        "forecast": forecast,
-        "spike_windows": spike_windows,
-        "breakout_queries": breakouts,
-    }
+    out = build_forecast_payload(keyword, points, breakouts, app_label=app_label,
+                                 ledger=ledger, ledger_path=ledger_path, slug=slug)
+    out.pop("_train_residuals", None)   # not used by the dashboard; keeps files smaller
+    return out
 
 
 # Dropdown label shown on the dashboard per app -- distinct from the actual
@@ -178,6 +152,12 @@ def main():
         print('Usage: python3 scrape_and_forecast.py "ATI TEAS" "CNA Exam" ...')
         sys.exit(1)
 
+    # One shared ledger across all keywords, loaded once and saved once at the
+    # end, so a mid-run failure cannot leave it half-written.
+    ledger_path = os.environ.get("PEAK_LEDGER", DEFAULT_LEDGER_PATH)
+    ledger = peak_ledger.load_ledger(ledger_path)
+    n_before = len(ledger["entries"])
+
     items = run_actor(token, keywords)
     print(f"\nGot {len(items)} dataset item(s) back from Apify.")
 
@@ -187,13 +167,22 @@ def main():
         if entry is None:
             print(f"  WARNING: no result returned for '{kw}', skipping.")
             continue
-        output = process_entry(entry, app_label=APP_LABELS.get(kw.lower(), kw.title()))
         key = slugify(kw)
+        output = process_entry(entry, app_label=APP_LABELS.get(kw.lower(), kw.title()),
+                               ledger=ledger, ledger_path=None, slug=key)
         out_path = os.path.join(out_dir, f"{key}_dashboard_data.json")
         with open(out_path, "w") as f:
             json.dump(output, f, indent=2)
+        o = output.get("surge_outlook")
+        sig = (f"{o['tier']}/{o['state']}" if o else f"no-signal ({output['no_signal_reason']})")
         print(f"  {key}: wrote {out_path}  (baseline={output['recent_baseline']}, "
-              f"yoy={output['yoy_growth_pct']}%, spike_windows={len(output['spike_windows'])})")
+              f"seas_ref={output['seasonal_reference']}, yoy={output['yoy_growth_pct']}%, "
+              f"windows={len(output['spike_windows'])}, signal={sig})")
+
+    peak_ledger.save_ledger(ledger, ledger_path)
+    resolved = sum(1 for e in ledger["entries"] if e.get("resolved_on"))
+    print(f"\nLedger {ledger_path}: {len(ledger['entries'])} entries "
+          f"(+{len(ledger['entries']) - n_before} new this run), {resolved} resolved.")
 
 
 if __name__ == "__main__":

@@ -223,12 +223,50 @@ function renderKPIs(app){
       <div class="kpi-value" style="font-size:17px;">${k.nextWindow ? fmtShort(k.nextWindow.start)+" – "+fmtShort(k.nextWindow.end) : "None in next 12mo"}</div>
       <div class="kpi-sub">${k.nextWindow ? "Confidence: "+k.nextWindow.confidence : ""}</div>
     </div>
-    <div class="kpi-card">
-      <div class="kpi-label">Recommended marketing start</div>
-      <div class="kpi-value" style="font-size:17px;color:var(--good);">${k.nextMarketing ? fmtShort(k.nextMarketing.marketing_window.start) : "—"}</div>
-      <div class="kpi-sub">${k.nextMarketing ? `Push through ${fmtShort(k.nextMarketing.marketing_window.end)} (seasonality: ${app.seasonal_stability_class || "n/a"})` : "No upcoming window"}</div>
-    </div>
+    ${renderSignalCard(app)}
   `;
+}
+
+/* The marketing signal. Deliberately separate from the "Next predicted spike"
+   card above: that one is the model's raw point forecast plus its uncertainty,
+   this one is the decision. Only shown for keywords whose window accuracy was
+   actually measured in the backtest -- for the rest it says why there is none,
+   instead of drawing a confident-looking box over a signal worth nothing. */
+function renderSignalCard(app){
+  const o = app.surge_outlook;
+  if (!o){
+    return `
+    <div class="kpi-card">
+      <div class="kpi-label">Marketing signal</div>
+      <div class="kpi-value" style="font-size:17px;color:var(--text-secondary);">Not available</div>
+      <div class="kpi-sub">${app.no_signal_reason || "no measured early-warning skill"}</div>
+    </div>`;
+  }
+  const STATE = {
+    PEAK_NOW: {txt:"PEAK NOW",  col:"var(--critical)", sub:"Surge under way — spend at full weight"},
+    RAMP:     {txt:"RAMP",      col:"var(--good)",     sub:"Inside the expected surge window — ramp spend now"},
+    HOLD:     {txt:"HOLD",      col:"var(--text-secondary)", sub:"No surge expected yet"},
+  }[o.state] || {txt:o.state, col:"var(--text-secondary)", sub:""};
+
+  const ew = o.expected_window;
+  let detail;
+  if (ew){
+    detail = `Expected surge ${fmtShort(ew.start)} – ${fmtShort(ew.end)} (${ew.width_weeks}-wk window)`;
+    if (o.state === "HOLD" && o.weeks_until_window != null)
+      detail += ` · opens in ${Math.round(o.weeks_until_window)} wk`;
+  } else {
+    detail = o.state_reason || STATE.sub;
+  }
+  return `
+    <div class="kpi-card">
+      <div class="kpi-label">Marketing signal · ${o.tier}</div>
+      <div class="kpi-value" style="font-size:20px;color:${STATE.col};">${STATE.txt}</div>
+      <div class="kpi-sub">${detail}</div>
+      <div class="kpi-sub" style="opacity:.75;">Window hit ${Math.round(o.measured_coverage*100)}% in backtest ·
+        median lead ${o.measured_median_lead_weeks} wk ·
+        fires on ${Math.round(o.measured_signal_rate*100)}% of weeks ·
+        ${o.surge_episodes_in_backtest} surge episodes measured</div>
+    </div>`;
 }
 
 function renderTables(app, visibleHistory){
@@ -285,6 +323,29 @@ function render(){
   const pointRadii = labels.map(d => (anomalySet.has(d) || d===surgeDate) ? 5 : 0);
 
   const annotations = {};
+
+  // The expected-surge bracket, drawn only where the signal is enabled. This is
+  // the band the backtest actually measured, so it is drawn heavier than the raw
+  // per-spike boxes below.
+  const so = app.surge_outlook;
+  if (so && so.expected_window){
+    const ew = so.expected_window;
+    if (!(ew.start > labels[labels.length-1] || ew.end < labels[0])){
+      annotations["expectedSurge"] = {
+        type:"box",
+        xMin: ew.start, xMax: ew.end,
+        backgroundColor: hexA(getCSS('--good'), 0.20),
+        borderColor: getCSS('--good'),
+        borderWidth:2,
+        label:{ display:true,
+          content:[`Expected surge (${ew.width_weeks}wk)`,
+                   `${Math.round(so.measured_coverage*100)}% hit rate`],
+          position:"start", font:{size:9,weight:"700"}, color:getCSS('--good'),
+          yAdjust:-10, xAdjust:4, backgroundColor: hexA(getCSS('--card'), 0.9) }
+      };
+    }
+  }
+
   app.spike_windows.forEach((w,i)=>{
     const mw = w.marketing_window;
     if (mw && !(mw.start > labels[labels.length-1] || mw.end < labels[0])){
