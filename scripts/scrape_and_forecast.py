@@ -135,6 +135,32 @@ def process_entry(entry, app_label=None):
     }
 
 
+# Dropdown label shown on the dashboard per app -- distinct from the actual
+# Google Trends search phrase (the "winner_keyword"), which is chosen purely
+# for forecast/correlation quality and can read oddly if title-cased raw
+# (e.g. "Aapc Cpc"). Keyed by keyword.lower() so it survives case variations
+# in how the keyword is passed on the command line. Finalized via
+# lag-correlation testing against real revenue, Aug 2026 -- see
+# keyword_research/top15_compare_groups.csv for the reasoning per app.
+APP_LABELS = {
+    "teas test": "ATI TEAS",
+    "comptia certification": "CompTIA",
+    "aswb exam": "ASWB",
+    "emt certification": "EMT",
+    "ancc certification": "ANCC",
+    "cna test": "CNA",
+    "hesi exam": "HESI A2",
+    "pharmacy tech certification": "PTCB",
+    "nclex exam": "NCLEX",
+    "servsafe exam": "ServSafe",
+    "aapc cpc": "AAPC CPC",
+    "bcen certification": "BCEN",
+    "real estate exam": "Real Estate",
+    "ccrn exam": "CCRN",
+    "pmp exam": "PMP",
+}
+
+
 def main():
     token = os.environ.get("APIFY_TOKEN")
     if not token:
@@ -161,7 +187,7 @@ def main():
         if entry is None:
             print(f"  WARNING: no result returned for '{kw}', skipping.")
             continue
-        output = process_entry(entry, app_label=kw.title())
+        output = process_entry(entry, app_label=APP_LABELS.get(kw.lower(), kw.title()))
         key = slugify(kw)
         out_path = os.path.join(out_dir, f"{key}_dashboard_data.json")
         with open(out_path, "w") as f:

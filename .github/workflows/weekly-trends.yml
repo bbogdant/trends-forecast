@@ -35,14 +35,19 @@ jobs:
       - name: Install dependencies
         run: pip install -r requirements.txt
 
+      # Keyword list finalized via lag-correlation testing against real
+      # RevenueCat revenue per app (Aug 2026) -- these are the empirically
+      # best-performing search phrase per app, not just the most "obvious"
+      # one. See keyword_research/top15_compare_groups.csv for the winner
+      # column and reasoning per app.
       - name: Run scrape + forecast for all tracked keywords
         env:
           APIFY_TOKEN: ${{ secrets.APIFY_TOKEN }}
         run: |
           python scripts/scrape_and_forecast.py \
-            "ATI TEAS" "Comptia Exam" "CNA Exam" "ASWB Exam" "NCLEX Exam" \
-            "GED PREP" "PTCB Exam" "Medical Exam" "HESI A2" "ANCC Exam" \
-            "EMT Exam" "ServSafe" "PRAXIS Exam" "ASVAB EXAM" "Real Estate Exam"
+            "teas test" "CompTIA certification" "aswb exam" "emt certification" "ancc certification" \
+            "cna test" "hesi exam" "pharmacy tech certification" "nclex exam" "servsafe exam" \
+            "AAPC CPC" "BCEN certification" "real estate exam" "CCRN exam" "PMP exam"
 
       # The job can run for several minutes (Apify actor + Prophet fits).
       # If you push a commit to main while it's running, a plain "git push"
