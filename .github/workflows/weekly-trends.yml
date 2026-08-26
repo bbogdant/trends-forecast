@@ -54,15 +54,30 @@ jobs:
       # would get rejected ("fetch first") because the runner's checkout is
       # now stale. Rebase onto the latest main right before pushing, with a
       # couple of retries, so this never blocks a week's data refresh.
+      # state/peak_ledger.json MUST be staged alongside the data. It is a tracked
+      # file that the run rewrites (it accumulates each week's predictions and
+      # resolves old ones), so leaving it out does not merely lose the ledger --
+      # it leaves the worktree dirty, and `git rebase` refuses to run at all:
+      #   error: cannot rebase: You have unstaged changes.
+      # The retry loop below then reports it as a "concurrent push" and burns all
+      # three attempts on a cause that cannot change. That is exactly how the
+      # 2026-08-26 run failed after a successful commit.
+      #
+      # `git add -A` rather than an explicit list, so any future tracked output
+      # cannot reintroduce the same failure. Nothing else in the repo changes
+      # during a run, and __pycache__ is untracked.
       - name: Commit updated data
         run: |
           git config user.name "trends-bot"
           git config user.email "trends-bot@users.noreply.github.com"
-          git add docs/data/*.json
+          git add -A
           git diff --cached --quiet && echo "No data changes this week." && exit 0
           git commit -m "Weekly Trends refresh $(date -u +%Y-%m-%d)"
           for i in 1 2 3; do
             git fetch origin main
+            # Belt and braces: if anything is still dirty, a rebase would abort
+            # before it even looks at the remote.
+            git status --porcelain
             if git rebase origin/main && git push; then
               echo "Pushed successfully."
               break
