@@ -3484,6 +3484,160 @@
       "signed_error_weeks": -4.0,
       "source": "backtest_seed",
       "timing_confidence": "medium"
+    },
+    {
+      "actual_peak_date": null,
+      "keyword": "teas test",
+      "lead_weeks": 21.0,
+      "made_on": "2026-08-16",
+      "predicted_peak_date": "2027-01-10",
+      "predicted_peak_value": 91.8,
+      "resolved_on": null,
+      "signed_error_weeks": null,
+      "timing_confidence": "high"
+    },
+    {
+      "actual_peak_date": null,
+      "keyword": "aswb exam",
+      "lead_weeks": 13.0,
+      "made_on": "2026-08-16",
+      "predicted_peak_date": "2026-11-15",
+      "predicted_peak_value": 79.7,
+      "resolved_on": null,
+      "signed_error_weeks": null,
+      "timing_confidence": "low"
+    },
+    {
+      "actual_peak_date": null,
+      "keyword": "emt certification",
+      "lead_weeks": 1.0,
+      "made_on": "2026-08-16",
+      "predicted_peak_date": "2026-08-23",
+      "predicted_peak_value": 89.7,
+      "resolved_on": null,
+      "signed_error_weeks": null,
+      "timing_confidence": "low"
+    },
+    {
+      "actual_peak_date": null,
+      "keyword": "ancc certification",
+      "lead_weeks": 1.0,
+      "made_on": "2026-08-16",
+      "predicted_peak_date": "2026-08-23",
+      "predicted_peak_value": 81.9,
+      "resolved_on": null,
+      "signed_error_weeks": null,
+      "timing_confidence": "low"
+    },
+    {
+      "actual_peak_date": null,
+      "keyword": "cna test",
+      "lead_weeks": 38.0,
+      "made_on": "2026-08-16",
+      "predicted_peak_date": "2027-05-09",
+      "predicted_peak_value": 98.7,
+      "resolved_on": null,
+      "signed_error_weeks": null,
+      "timing_confidence": "medium"
+    },
+    {
+      "actual_peak_date": null,
+      "keyword": "hesi exam",
+      "lead_weeks": 16.0,
+      "made_on": "2026-08-16",
+      "predicted_peak_date": "2026-12-06",
+      "predicted_peak_value": 100.0,
+      "resolved_on": null,
+      "signed_error_weeks": null,
+      "timing_confidence": "high"
+    },
+    {
+      "actual_peak_date": null,
+      "keyword": "pharmacy tech certification",
+      "lead_weeks": 1.0,
+      "made_on": "2026-08-16",
+      "predicted_peak_date": "2026-08-23",
+      "predicted_peak_value": 80.9,
+      "resolved_on": null,
+      "signed_error_weeks": null,
+      "timing_confidence": "low"
+    },
+    {
+      "actual_peak_date": null,
+      "keyword": "nclex exam",
+      "lead_weeks": 4.0,
+      "made_on": "2026-08-16",
+      "predicted_peak_date": "2026-09-13",
+      "predicted_peak_value": 78.4,
+      "resolved_on": null,
+      "signed_error_weeks": null,
+      "timing_confidence": "medium"
+    },
+    {
+      "actual_peak_date": null,
+      "keyword": "servsafe exam",
+      "lead_weeks": 8.0,
+      "made_on": "2026-08-16",
+      "predicted_peak_date": "2026-10-11",
+      "predicted_peak_value": 70.0,
+      "resolved_on": null,
+      "signed_error_weeks": null,
+      "timing_confidence": "low"
+    },
+    {
+      "actual_peak_date": null,
+      "keyword": "AAPC CPC",
+      "lead_weeks": 4.0,
+      "made_on": "2026-08-16",
+      "predicted_peak_date": "2026-09-13",
+      "predicted_peak_value": 82.4,
+      "resolved_on": null,
+      "signed_error_weeks": null,
+      "timing_confidence": "low"
+    },
+    {
+      "actual_peak_date": null,
+      "keyword": "BCEN certification",
+      "lead_weeks": 6.0,
+      "made_on": "2026-08-16",
+      "predicted_peak_date": "2026-09-27",
+      "predicted_peak_value": 14.6,
+      "resolved_on": null,
+      "signed_error_weeks": null,
+      "timing_confidence": "medium"
+    },
+    {
+      "actual_peak_date": null,
+      "keyword": "real estate exam",
+      "lead_weeks": 16.0,
+      "made_on": "2026-08-16",
+      "predicted_peak_date": "2026-12-06",
+      "predicted_peak_value": 88.7,
+      "resolved_on": null,
+      "signed_error_weeks": null,
+      "timing_confidence": "medium"
+    },
+    {
+      "actual_peak_date": null,
+      "keyword": "CCRN exam",
+      "lead_weeks": 8.0,
+      "made_on": "2026-08-16",
+      "predicted_peak_date": "2026-10-11",
+      "predicted_peak_value": 82.0,
+      "resolved_on": null,
+      "signed_error_weeks": null,
+      "timing_confidence": "low"
+    },
+    {
+      "actual_peak_date": null,
+      "keyword": "PMP exam",
+      "lead_weeks": 4.0,
+      "made_on": "2026-08-16",
+      "predicted_peak_date": "2026-09-13",
+      "predicted_peak_value": 70.4,
+      "resolved_on": null,
+      "signed_error_weeks": null,
+      "timing_confidence": "low"
     }
   ],
   "version": 1
