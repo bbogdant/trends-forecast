@@ -109,16 +109,15 @@
       <span class="legend-item"><span class="swatch" style="background:var(--series-forecast);opacity:.55;border-top:2px dashed var(--series-forecast)"></span> Forecast (Prophet)</span>
       <span class="legend-item"><span class="swatch" style="background:var(--series-forecast);opacity:.18"></span> Forecast uncertainty (80% interval)</span>
       <span class="legend-item"><span class="swatch dot" style="background:var(--critical)"></span> Historical anomaly / active surge</span>
-      <span class="legend-item"><span class="swatch" style="background:var(--warning);opacity:.35"></span> Predicted spike window</span>
-      <span class="legend-item"><span class="swatch" style="background:var(--good);opacity:.22"></span> Recommended marketing push window</span>
+      <span class="legend-item"><span class="swatch" style="background:var(--good);opacity:.22"></span> Expected surge window (measured signal only)</span>
     </div>
   </section>
 
   <section class="panel-row">
     <div class="panel">
-      <h3>Predicted spike windows (next 12 months)</h3>
+      <h3>Expected surge window (measured signal only)</h3>
       <table id="spikeTable">
-        <thead><tr><th>Window</th><th>Peak (est.)</th><th>Confidence</th><th>Start marketing</th></tr></thead>
+        <thead><tr><th>Window</th><th>Centre</th><th>Tier</th><th>Backtested hit rate</th></tr></thead>
         <tbody></tbody>
       </table>
     </div>
@@ -191,11 +190,7 @@ function getSlice(app, rangeKey){
 }
 
 function computeKPIs(app){
-  const nextWindow = app.spike_windows[0];
-  const today = app.last_actual_date;
-  // first spike window whose marketing push window hasn't fully ended yet
-  const nextMarketing = app.spike_windows.find(w => w.marketing_window && w.marketing_window.end >= today);
-  return { baseline: app.recent_baseline, yoy: app.yoy_growth_pct, nextWindow, nextMarketing };
+  return { baseline: app.recent_baseline, yoy: app.yoy_growth_pct };
 }
 
 function renderKPIs(app){
@@ -218,20 +213,20 @@ function renderKPIs(app){
       <div class="kpi-value">${k.yoy > 0 ? "+" : ""}${k.yoy}%</div>
       <div class="kpi-sub">vs. same weeks last year</div>
     </div>
-    <div class="kpi-card">
-      <div class="kpi-label">Next predicted spike</div>
-      <div class="kpi-value" style="font-size:17px;">${k.nextWindow ? fmtShort(k.nextWindow.start)+" – "+fmtShort(k.nextWindow.end) : "None in next 12mo"}</div>
-      <div class="kpi-sub">${k.nextWindow ? "Confidence: "+k.nextWindow.confidence : ""}</div>
-    </div>
     ${renderSignalCard(app)}
   `;
 }
 
-/* The marketing signal. Deliberately separate from the "Next predicted spike"
-   card above: that one is the model's raw point forecast plus its uncertainty,
-   this one is the decision. Only shown for keywords whose window accuracy was
-   actually measured in the backtest -- for the rest it says why there is none,
-   instead of drawing a confident-looking box over a signal worth nothing. */
+/* The marketing signal -- the ONLY forward-looking claim this dashboard makes.
+   Earlier versions also showed the raw Prophet spike_windows (a "Next predicted
+   spike" KPI card, plus per-window boxes on the chart and in the table below)
+   regardless of whether that window's accuracy had ever been measured. That
+   meant a keyword the backtest found unreliable (e.g. PMP, 0% forecast-surge
+   rate) could still show a confident-looking predicted window with its own
+   "Confidence: low" label right next to a "Marketing signal: Not available"
+   card -- two contradictory claims on one screen. Removed: everything below is
+   now driven by surge_outlook, which only exists where the backtest actually
+   measured a usable window. */
 function renderSignalCard(app){
   const o = app.surge_outlook;
   if (!o){
@@ -271,13 +266,21 @@ function renderSignalCard(app){
 
 function renderTables(app, visibleHistory){
   const spikeBody = document.querySelector("#spikeTable tbody");
-  spikeBody.innerHTML = app.spike_windows.map(w=>`
-    <tr>
-      <td>${fmtShort(w.start)} – ${fmtShort(w.end)}</td>
-      <td>${w.peak_value} (est.)</td>
-      <td><span class="badge ${w.confidence}">${w.confidence}</span></td>
-      <td>${w.marketing_window ? fmtShort(w.marketing_window.start)+" – "+fmtShort(w.marketing_window.end) : "—"}</td>
-    </tr>`).join("") || `<tr><td colspan="4">No spike window detected in the next 12 months.</td></tr>`;
+  const so = app.surge_outlook;
+  if (so && so.expected_window){
+    const ew = so.expected_window;
+    const badgeClass = so.measured_coverage >= 0.9 ? "high" : so.measured_coverage >= 0.7 ? "medium" : "low";
+    spikeBody.innerHTML = `
+      <tr>
+        <td>${fmtShort(ew.start)} – ${fmtShort(ew.end)}</td>
+        <td>${fmtShort(so.predicted_peak_date || ew.start)}</td>
+        <td><span class="badge ${badgeClass}">${so.tier}</span></td>
+        <td>${Math.round(so.measured_coverage*100)}% (${so.surge_episodes_in_backtest} episodes)</td>
+      </tr>`;
+  } else {
+    const reason = so ? (so.state_reason || "no surge in the 52-week forecast horizon") : (app.no_signal_reason || "no measured early-warning skill");
+    spikeBody.innerHTML = `<tr><td colspan="4">No reliable window right now — ${reason}.</td></tr>`;
+  }
 
   const visibleDates = new Set(visibleHistory.map(h=>h.date));
   const anomBody = document.querySelector("#anomalyTable tbody");
@@ -324,9 +327,8 @@ function render(){
 
   const annotations = {};
 
-  // The expected-surge bracket, drawn only where the signal is enabled. This is
-  // the band the backtest actually measured, so it is drawn heavier than the raw
-  // per-spike boxes below.
+  // The expected-surge bracket -- the only forward-looking box on this chart.
+  // Drawn only when surge_outlook has a measured window for this keyword.
   const so = app.surge_outlook;
   if (so && so.expected_window){
     const ew = so.expected_window;
@@ -346,32 +348,12 @@ function render(){
     }
   }
 
-  app.spike_windows.forEach((w,i)=>{
-    const mw = w.marketing_window;
-    if (mw && !(mw.start > labels[labels.length-1] || mw.end < labels[0])){
-      annotations["marketing"+i] = {
-        type:"box",
-        xMin: mw.start, xMax: mw.end,
-        backgroundColor: hexA(getCSS('--good'), 0.14),
-        borderColor: hexA(getCSS('--good'), 0.4),
-        borderWidth:1, borderDash:[3,3],
-        label:{ display:true, content:["Marketing push"], position:"start",
-          font:{size:9,weight:"600"}, color:getCSS('--good'), yAdjust:-8, xAdjust:4,
-          backgroundColor: hexA(getCSS('--card'), 0.85) }
-      };
-    }
-    if (w.start > labels[labels.length-1] || w.end < labels[0]) return;
-    annotations["spike"+i] = {
-      type:"box",
-      xMin: w.start, xMax: w.end,
-      backgroundColor: hexA(getCSS('--warning'), 0.16),
-      borderColor: hexA(getCSS('--warning'), 0.45),
-      borderWidth:1,
-      label:{ display:true, content:[`Spike?`,`(${w.confidence})`], position:"center",
-        font:{size:10,weight:"600"}, color:getCSS('--text-secondary'), yAdjust:0,
-        backgroundColor: hexA(getCSS('--card'), 0.85) }
-    };
-  });
+  // NOTE: the raw Prophet spike_windows used to be drawn here as extra boxes
+  // ("Spike? (low)", "Marketing push") regardless of measured accuracy -- that
+  // is exactly the false-signal problem: a keyword like PMP (0% forecast-surge
+  // rate, no measured skill) would still get a confident-looking shaded window.
+  // The only forward-looking box on this chart now is "expectedSurge" above,
+  // which only exists when surge_outlook actually has a measured window.
   if (surgeDate && surgeDate >= labels[0] && surgeDate <= labels[labels.length-1]){
     annotations["surgeLine"] = {
       type:"line", xMin:surgeDate, xMax:surgeDate,
