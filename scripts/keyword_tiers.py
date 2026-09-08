@@ -40,6 +40,18 @@ history -- origin-weeks are not independent, since one episode spans several
 consecutive origins. Treat these as provisional and re-derive them as
 state/peak_ledger.json accumulates:
     python3 scripts/backtest_peaks.py --from-dashboard-data docs/data
+
+THE 20 KEYWORDS ADDED LATER (GED, ASVAB, LSAT, cosmetology, CCNA, firefighter,
+praxis, SAT, personal trainer, ACT, ASE, CSCS, journeyman electrician, NCE,
+phlebotomy, MBLEX, NREMT paramedic, SHRM, HiSET, plumber) were run through the
+same trend-robust rolling-origin backtest (52 weekly origins each -- fewer than
+the original 15's 149, because these had no pre-existing ledger history and the
+scoring window needs 54 weeks of held-out future data past every origin). Only
+cosmetology_exam cleared a tier threshold (tier2, 86% coverage on 22 fired
+signals -- comparable evidence to nclex_exam's tier2 entry). The other 19 came
+back below both the 95%/75% thresholds, several of them by a wide margin, and
+two (mblex_exam, plumber_exam) are mostly-zero series like bcen_certification.
+hiset_test came closest to tier2 (61% coverage) without clearing it.
 """
 
 # tier -> window geometry. `before`/`after` are weeks around the predicted peak.
@@ -82,6 +94,15 @@ KEYWORD_TIERS = {
         "note": "only 1 clean surge episode in five years -- weakest evidence in "
                 "tier 2, revisit as the ledger grows",
     },
+    "cosmetology_exam": {
+        "tier": "tier2", "coverage": 0.86, "median_lead_weeks": 8,
+        "signal_rate": 0.423, "surge_episodes": 24,
+        "note": "fires often (42% of origins) and has an unusually high full-"
+                "history episode count (24) -- this series swings past the "
+                "surge threshold much more frequently than the rest of the "
+                "portfolio, so the 86% coverage rests on more repeat evidence "
+                "than most tier-2 entries but the series itself is noisier",
+    },
 }
 
 # Explicitly not enabled, with the measured reason. Kept in code so the
@@ -97,6 +118,32 @@ NO_SIGNAL_REASONS = {
     "emt_certification": "model never produces a forecast surge (0% of weeks)",
     "pmp_exam": "model never produces a forecast surge (0% of weeks)",
     "bcen_certification": "98% of weeks are zero -- series is not forecastable",
+
+    # --- the 20 keywords added later (see module docstring) ---
+    "ged_test": "window coverage 14% (median timing error 13wk)",
+    "asvab_test": "window coverage 0% (median timing error 44wk)",
+    "lsat_test": "window coverage 17% (median timing error 9wk)",
+    "ccna_certification": "no measurable early-warning skill in backtest",
+    "firefighter_test": "model never produces a forecast surge (0% of weeks)",
+    "praxis_test": "window coverage 48% (median timing error 7wk)",
+    "sat_prep": "model produces a forecast surge on only 11.5% of weeks",
+    "personal_trainer_certification": "window coverage 29% (median timing error 28wk)",
+    "act_test": "window coverage 48% (median timing error 4wk); fires on every "
+                "origin but the bracket is too tight for how far the peak actually lands",
+    "ase_certification": "model never produces a forecast surge (0% of weeks)",
+    "cscs_certification": "window coverage 0% (median timing error 22wk); fires on "
+                "69% of origins but never inside the bracket -- timing, not detection, is the failure",
+    "journeyman_electrician_test": "window coverage 24% (median timing error 23wk)",
+    "nce_exam": "window coverage 0% (median timing error 18wk)",
+    "phlebotomy_certification": "model produces a forecast surge on only 1.9% of weeks",
+    "mblex_exam": "62% of weeks are zero -- series is not forecastable",
+    "nremt_paramedic": "window coverage 53% (median timing error 0wk); close but "
+                "below the 75% tier-2 bar",
+    "shrm_certification": "window coverage 44% (median timing error 2wk); fires on "
+                "every origin but under-clears the coverage bar",
+    "hiset_test": "window coverage 61% (median timing error 4wk); closest of the 20 "
+                "to clearing tier 2, revisit as more data accumulates",
+    "plumber_exam": "72% of weeks are zero -- series is not forecastable",
 }
 
 
