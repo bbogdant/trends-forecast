@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>YoY Growth Leaderboard — Trend Dashboard</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+<style>
+  :root{
+    color-scheme: light;
+    --surface-1:#fcfcfb; --page:#f9f9f7; --card:#ffffff;
+    --text-primary:#0b0b0b; --text-secondary:#52514e; --text-muted:#898781;
+    --grid:#e1e0d9; --border:rgba(11,11,11,0.10);
+    --series-actual:#2a78d6;
+    --good:#0ca30c; --warning:#fab219; --serious:#ec835a; --critical:#d03b3b;
+  }
+  [data-theme="dark"]{
+    color-scheme: dark;
+    --surface-1:#1a1a19; --page:#0d0d0d; --card:#232322;
+    --text-primary:#ffffff; --text-secondary:#c3c2b7; --text-muted:#898781;
+    --grid:#2c2c2a; --border:rgba(255,255,255,0.10);
+    --series-actual:#3987e5;
+    --good:#0ca30c; --warning:#fab219; --serious:#ec835a; --critical:#e66767;
+  }
+  *{margin:0;padding:0;box-sizing:border-box;}
+  body{font-family: system-ui, -apple-system, "Segoe UI", sans-serif; background: var(--page); color: var(--text-primary); line-height:1.5;}
+  .wrap{max-width:1180px;margin:0 auto;padding:20px;}
+  header{display:flex;justify-content:space-between;align-items:flex-start;gap:16px;flex-wrap:wrap;margin-bottom:18px;}
+  header h1{font-size:19px;font-weight:600;}
+  header p{font-size:13px;color:var(--text-secondary);margin-top:4px;}
+  header a{color:var(--series-actual);text-decoration:none;font-weight:600;}
+  .theme-toggle{font-family:inherit;font-size:13px;padding:7px 10px;border-radius:6px;border:1px solid var(--border);background:var(--card);color:var(--text-primary);cursor:pointer;}
+  .panel{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:16px 18px;margin-bottom:16px;}
+  .panel h3{font-size:14px;font-weight:600;margin-bottom:4px;}
+  .panel .hint{font-size:12px;color:var(--text-secondary);margin-bottom:14px;}
+  .chart-holder{height:640px;position:relative;}
+  table{width:100%;border-collapse:collapse;font-size:13px;}
+  th{text-align:left;padding:8px 10px;color:var(--text-secondary);font-weight:600;text-transform:uppercase;font-size:11px;letter-spacing:.4px;border-bottom:1px solid var(--grid);cursor:pointer;user-select:none;}
+  th:hover{color:var(--text-primary);}
+  td{padding:9px 10px;border-bottom:1px solid var(--grid);}
+  tr:last-child td{border-bottom:none;}
+  .growth-pos{color:var(--good);font-weight:600;}
+  .growth-neg{color:var(--critical);font-weight:600;}
+  .applink{color:var(--series-actual);text-decoration:none;font-weight:600;}
+  footer{margin-top:18px;font-size:11.5px;color:var(--text-muted);text-align:center;}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div>
+      <h1>YoY Growth Leaderboard — All Apps</h1>
+      <p>Which keywords are searched more (or less) this week than the same weeks last year.</p>
+      <p><a href="index.html">← Back to per-app dashboard</a> &nbsp;·&nbsp; <a href="upcoming.html">Upcoming peaks across all apps →</a></p>
+    </div>
+    <button class="theme-toggle" id="themeToggle">🌙 Dark</button>
+  </header>
+
+  <section class="panel">
+    <h3>Year-over-year search growth, sorted highest to lowest</h3>
+    <p class="hint">Each bar compares the last 8 complete weeks (recent baseline) against the same calendar weeks one year ago (±28 days around the one-year-ago date), so a single noisy week can't swing the number. This is a <b>current-momentum</b> read, not a forecast — it says what already happened, not what's coming. For a forward-looking signal see the <a href="upcoming.html">Upcoming peaks</a> page instead.</p>
+    <div class="chart-holder"><canvas id="yoyChart"></canvas></div>
+  </section>
+
+  <section class="panel">
+    <h3>Full ranking</h3>
+    <p class="hint">Click a column header to re-sort.</p>
+    <table id="yoyTable">
+      <thead>
+        <tr>
+          <th data-key="rank">#</th>
+          <th data-key="app_label">App</th>
+          <th data-key="yoy">YoY growth</th>
+          <th data-key="baseline">Recent baseline (8-wk avg)</th>
+          <th data-key="latest">Latest reading</th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+  </section>
+
+  <footer>Data source: Google Trends (weekly), same pipeline as the per-app dashboard · YoY growth = (8-week trailing average) vs. (average of the same calendar weeks one year earlier) · Purely descriptive of the past — pair with the Upcoming peaks page for forward-looking timing · Refreshed weekly by the same GitHub Actions job</footer>
+</div>
+
+<script>
+const APP_KEYS = ["teas_test", "comptia_certification", "aswb_exam", "emt_certification", "ancc_certification", "cna_test", "hesi_exam", "pharmacy_tech_certification", "nclex_exam", "servsafe_exam", "aapc_cpc", "bcen_certification", "real_estate_exam", "ccrn_exam", "pmp_exam", "ged_test", "asvab_test", "lsat_test", "cosmetology_exam", "ccna_certification", "firefighter_test", "praxis_test", "sat_prep", "personal_trainer_certification", "act_test", "ase_certification", "cscs_certification", "journeyman_electrician_test", "nce_exam", "phlebotomy_certification", "mblex_exam", "nremt_paramedic", "shrm_certification", "hiset_test", "plumber_exam"];
+
+let rows = [];
+let sortKey = "yoy";
+let sortAsc = false; // highest growth first by default
+let chart = null;
+
+function buildRows(apps){
+  return apps.map(app=>({
+    app_label: app.app_label,
+    yoy: app.yoy_growth_pct,
+    baseline: app.recent_baseline,
+    latest: app.history[app.history.length-1].value,
+  }));
+}
+
+function getCSS(varName){
+  return getComputedStyle(document.body).getPropertyValue(varName).trim();
+}
+
+function renderChart(sortedByYoyDesc){
+  const ctx = document.getElementById("yoyChart").getContext("2d");
+  if (chart) chart.destroy();
+  const labels = sortedByYoyDesc.map(r=>r.app_label);
+  const data = sortedByYoyDesc.map(r=>r.yoy);
+  const colors = data.map(v => v >= 0 ? getCSS('--good') : getCSS('--critical'));
+  chart = new Chart(ctx, {
+    type:"bar",
+    data:{ labels, datasets:[{ label:"YoY growth %", data, backgroundColor:colors, borderRadius:3 }] },
+    options:{
+      indexAxis:"y",
+      responsive:true, maintainAspectRatio:false,
+      plugins:{
+        legend:{ display:false },
+        tooltip:{ callbacks:{ label:(item)=> `${item.raw > 0 ? "+" : ""}${item.raw}% vs. same weeks last year` } }
+      },
+      scales:{
+        x:{ grid:{ color:getCSS('--grid') }, ticks:{ color:getCSS('--text-muted'), callback:(v)=>v+"%" } },
+        y:{ grid:{ display:false }, ticks:{ color:getCSS('--text-primary'), font:{size:11} } }
+      }
+    }
+  });
+}
+
+function render(){
+  // Chart always shows the full leaderboard sorted highest-to-lowest YoY,
+  // regardless of how the table below is currently sorted -- that ordering
+  // is what makes "who's up the most" readable at a glance.
+  const byYoy = [...rows].sort((a,b)=>b.yoy - a.yoy);
+  renderChart(byYoy);
+
+  const sorted = [...rows].sort((a,b)=>{
+    let av = a[sortKey], bv = b[sortKey];
+    if (av < bv) return sortAsc ? -1 : 1;
+    if (av > bv) return sortAsc ? 1 : -1;
+    return 0;
+  });
+  const tbody = document.querySelector("#yoyTable tbody");
+  tbody.innerHTML = sorted.map((r,i)=>`
+    <tr>
+      <td>${i+1}</td>
+      <td>${r.app_label}</td>
+      <td class="${r.yoy >= 0 ? 'growth-pos' : 'growth-neg'}">${r.yoy > 0 ? "+" : ""}${r.yoy}%</td>
+      <td>${r.baseline}</td>
+      <td>${r.latest}</td>
+    </tr>`).join("");
+}
+
+document.querySelectorAll("#yoyTable th").forEach(th=>{
+  th.addEventListener("click", ()=>{
+    const key = th.dataset.key;
+    if (key === "rank") return; // rank is derived from current sort, not sortable itself
+    if (sortKey === key) sortAsc = !sortAsc; else { sortKey = key; sortAsc = false; }
+    render();
+  });
+});
+
+document.getElementById("themeToggle").addEventListener("click", ()=>{
+  const isDark = document.body.getAttribute("data-theme")==="dark";
+  document.body.setAttribute("data-theme", isDark ? "light" : "dark");
+  document.getElementById("themeToggle").textContent = isDark ? "🌙 Dark" : "☀️ Light";
+  render();
+});
+
+async function loadData(){
+  const entries = await Promise.all(APP_KEYS.map(async key => {
+    try {
+      const res = await fetch(`data/${key}_dashboard_data.json`, {cache: "no-cache"});
+      if (!res.ok) throw new Error(res.status);
+      return await res.json();
+    } catch (e) {
+      console.error("Failed to load", key, e);
+      return null;
+    }
+  }));
+  const apps = entries.filter(Boolean);
+  rows = buildRows(apps);
+  render();
+}
+
+loadData();
+</script>
+</body>
+</html>
