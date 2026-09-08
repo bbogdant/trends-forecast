@@ -93,6 +93,7 @@
     </div>
     <div class="controls">
       <select id="appSelect"></select>
+      <div class="range-group" id="granularityGroup"></div>
       <div class="range-group" id="rangeGroup"></div>
       <button class="theme-toggle" id="themeToggle">🌙 Dark</button>
     </div>
@@ -145,9 +146,14 @@ const RANGES = [
   { key:"1Y", label:"1Y",  trailingWeeks:52, forecastWeeks:52 },
   { key:"5Y", label:"5Y (all)", trailingWeeks:Infinity, forecastWeeks:52 },
 ];
+const GRANULARITIES = [
+  { key:"weekly",  label:"Weekly"  },
+  { key:"monthly", label:"Monthly" },
+];
 
 let currentAppKey = Object.keys(APPS)[0];
 let currentRangeKey = "6M";
+let currentGranularity = "weekly";
 let chart = null;
 
 function fmtDate(d){
@@ -155,6 +161,37 @@ function fmtDate(d){
 }
 function fmtShort(d){
   return new Date(d+"T00:00:00").toLocaleDateString("en-US",{month:"short",day:"numeric"});
+}
+function fmtMonth(d){
+  return new Date(d+"T00:00:00").toLocaleDateString("en-US",{month:"short",year:"numeric"});
+}
+// First-of-month key for a "YYYY-MM-DD" date string, e.g. "2026-03-17" -> "2026-03-01".
+// Used to bucket weekly points into months and to make sure dates coming from
+// different sources (history, forecast, anomalies, surge_outlook windows) land
+// on the same category-axis label when the monthly view is active.
+function monthStart(dateStr){
+  return dateStr.slice(0,7) + "-01";
+}
+// Averages weekly points into monthly buckets. `points` is an array of objects
+// each carrying a "date" plus the numeric fields named in `valueKeys" -- works
+// for both history points ({date,value}) and forecast points
+// ({date,value,yhat_lower,yhat_upper}).
+function aggregateMonthly(points, valueKeys){
+  const buckets = new Map();
+  points.forEach(p=>{
+    const mk = monthStart(p.date);
+    if (!buckets.has(mk)) buckets.set(mk, {date:mk, count:0, sums:{}});
+    const b = buckets.get(mk);
+    b.count++;
+    valueKeys.forEach(k=>{
+      if (p[k] != null) b.sums[k] = (b.sums[k] || 0) + p[k];
+    });
+  });
+  return [...buckets.values()].sort((a,b)=> a.date < b.date ? -1 : 1).map(b=>{
+    const out = {date:b.date};
+    valueKeys.forEach(k=> out[k] = b.sums[k] != null ? Math.round((b.sums[k]/b.count)*10)/10 : null);
+    return out;
+  });
 }
 
 function buildAppSelect(){
@@ -181,10 +218,33 @@ function buildRangeButtons(){
   });
 }
 
+function buildGranularityButtons(){
+  const g = document.getElementById("granularityGroup");
+  g.innerHTML = "";
+  GRANULARITIES.forEach(gr=>{
+    const btn = document.createElement("button");
+    btn.className = "range-btn" + (gr.key===currentGranularity ? " active":"");
+    btn.textContent = gr.label;
+    btn.addEventListener("click", ()=>{ currentGranularity = gr.key; render(); });
+    g.appendChild(btn);
+  });
+}
+
 function getSlice(app, rangeKey){
   const range = RANGES.find(r=>r.key===rangeKey);
-  const history = app.history.slice(range.trailingWeeks===Infinity ? 0 : -range.trailingWeeks);
-  const forecast = app.forecast.slice(0, range.forecastWeeks);
+  let history = app.history.slice(range.trailingWeeks===Infinity ? 0 : -range.trailingWeeks);
+  let forecast = app.forecast.slice(0, range.forecastWeeks);
+  if (currentGranularity === "monthly"){
+    history = aggregateMonthly(history, ["value"]);
+    let forecastAgg = aggregateMonthly(forecast, ["value","yhat_lower","yhat_upper"]);
+    // The current (partial) month can land in both history and forecast --
+    // Chart.js can't have two category-axis entries with the same label, so
+    // drop the forecast side of that shared month.
+    if (history.length && forecastAgg.length && forecastAgg[0].date === history[history.length-1].date){
+      forecastAgg = forecastAgg.slice(1);
+    }
+    forecast = forecastAgg;
+  }
   return { history, forecast, range };
 }
 
@@ -281,9 +341,19 @@ function renderTables(app, visibleHistory){
     spikeBody.innerHTML = `<tr><td colspan="4">No reliable window right now — ${reason}.</td></tr>`;
   }
 
-  const visibleDates = new Set(visibleHistory.map(h=>h.date));
+  // visibleHistory carries weekly dates normally, but month-start dates when
+  // the monthly view is active -- match anomalies by the month they fall in
+  // rather than by exact date in that case, so the table still lists every
+  // underlying weekly anomaly (not just the one used for the chart marker).
   const anomBody = document.querySelector("#anomalyTable tbody");
-  const inView = app.anomalies.filter(a=>visibleDates.has(a.date));
+  let inView;
+  if (currentGranularity === "monthly"){
+    const visibleMonths = new Set(visibleHistory.map(h=>h.date));
+    inView = app.anomalies.filter(a=>visibleMonths.has(monthStart(a.date)));
+  } else {
+    const visibleDates = new Set(visibleHistory.map(h=>h.date));
+    inView = app.anomalies.filter(a=>visibleDates.has(a.date));
+  }
   anomBody.innerHTML = inView.slice(-10).reverse().map(a=>`
     <tr><td>${fmtDate(a.date)}</td><td>${a.value}</td><td>+${a.z}σ</td></tr>`).join("")
     || `<tr><td colspan="3">No anomalies in the selected window.</td></tr>`;
@@ -291,12 +361,14 @@ function renderTables(app, visibleHistory){
 
 function render(){
   buildRangeButtons();
+  buildGranularityButtons();
   const app = APPS[currentAppKey];
   const { history, forecast, range } = getSlice(app, currentRangeKey);
+  const isMonthly = currentGranularity === "monthly";
 
   document.getElementById("chartTitle").textContent = `${app.app_label} — "${app.keyword}"`;
   document.getElementById("chartHint").textContent =
-    `Showing ${range.label==='5Y (all)' ? 'full 5-year history' : 'last '+range.label} of actual search interest plus a ${range.forecastWeeks}-week forward projection.`;
+    `Showing ${range.label==='5Y (all)' ? 'full 5-year history' : 'last '+range.label} of actual search interest plus a ${range.forecastWeeks}-week forward projection${isMonthly ? " (monthly average)" : ""}.`;
 
   renderKPIs(app);
   renderTables(app, history);
@@ -315,8 +387,20 @@ function render(){
     bandUpper[history.length-1] = history[history.length-1].value;
   }
 
-  const anomalySet = new Map(app.anomalies.map(a=>[a.date, a]));
-  const surgeDate = app.active_surge ? app.active_surge.date : null;
+  // In monthly view, weekly anomaly/surge dates are remapped to the month they
+  // fall in so they line up with the (now monthly) category-axis labels. If two
+  // anomalies land in the same month, keep the stronger one (higher z-score).
+  let anomalySet;
+  if (isMonthly){
+    anomalySet = new Map();
+    app.anomalies.forEach(a=>{
+      const mk = monthStart(a.date);
+      if (!anomalySet.has(mk) || a.z > anomalySet.get(mk).z) anomalySet.set(mk, a);
+    });
+  } else {
+    anomalySet = new Map(app.anomalies.map(a=>[a.date, a]));
+  }
+  const surgeDate = app.active_surge ? (isMonthly ? monthStart(app.active_surge.date) : app.active_surge.date) : null;
 
   const pointColors = labels.map(d=>{
     if (d===surgeDate) return getCSS('--critical');
@@ -331,10 +415,14 @@ function render(){
   const so = app.surge_outlook;
   if (so && so.expected_window){
     const ew = so.expected_window;
-    if (!(ew.start > labels[labels.length-1] || ew.end < labels[0])){
+    // In monthly view the box's edges must land on category-axis labels too,
+    // which are now month-start dates rather than the exact weekly dates.
+    const ewStart = isMonthly ? monthStart(ew.start) : ew.start;
+    const ewEnd = isMonthly ? monthStart(ew.end) : ew.end;
+    if (!(ewStart > labels[labels.length-1] || ewEnd < labels[0])){
       annotations["expectedSurge"] = {
         type:"box",
-        xMin: ew.start, xMax: ew.end,
+        xMin: ewStart, xMax: ewEnd,
         backgroundColor: hexA(getCSS('--good'), 0.20),
         borderColor: getCSS('--good'),
         borderWidth:2,
@@ -406,7 +494,7 @@ function render(){
         legend:{ display:false },
         tooltip:{
           callbacks:{
-            title: (items)=> fmtDate(items[0].label),
+            title: (items)=> isMonthly ? fmtMonth(items[0].label) : fmtDate(items[0].label),
             label: (item)=>{
               if (item.raw===null) return null;
               if (item.dataset.label.startsWith("Forecast range")) return null;
@@ -422,7 +510,7 @@ function render(){
       },
       scales:{
         x:{ grid:{ display:false }, ticks:{ color:getCSS('--text-muted'), maxRotation:0, autoSkip:true, maxTicksLimit:10,
-              callback:(val,idx)=>fmtShort(labels[idx]) } },
+              callback:(val,idx)=> isMonthly ? fmtMonth(labels[idx]) : fmtShort(labels[idx]) } },
         y:{ beginAtZero:true, max:100, grid:{ color:getCSS('--grid') }, ticks:{ color:getCSS('--text-muted') } }
       }
     }
