@@ -47,7 +47,11 @@ jobs:
           python scripts/scrape_and_forecast.py \
             "teas test" "CompTIA certification" "aswb exam" "emt certification" "ancc certification" \
             "cna test" "hesi exam" "pharmacy tech certification" "nclex exam" "servsafe exam" \
-            "AAPC CPC" "BCEN certification" "real estate exam" "CCRN exam" "PMP exam"
+            "AAPC CPC" "BCEN certification" "real estate exam" "CCRN exam" "PMP exam" \
+            "GED test" "ASVAB test" "LSAT test" "Cosmetology exam" "CCNA certification" \
+            "Firefighter test" "Praxis test" "SAT prep" "Personal trainer certification" "ACT test" \
+            "ASE certification" "CSCS certification" "Journeyman electrician test" "NCE exam" "Phlebotomy certification" \
+            "MBLEX exam" "NREMT paramedic" "SHRM certification" "HiSET test" "Plumber exam"
 
       # The job can run for several minutes (Apify actor + Prophet fits).
       # If you push a commit to main while it's running, a plain "git push"
