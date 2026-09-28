@@ -1,12 +1,12 @@
 {
   "keyword": "BCEN certification",
   "app_label": "BCEN",
-  "last_actual_date": "2026-09-13",
-  "recent_baseline": 2,
+  "last_actual_date": "2026-09-20",
+  "recent_baseline": 0.9,
   "seasonal_reference": 0.0,
   "yoy_growth_pct": 0.0,
-  "seasonal_stability": -0.02,
-  "seasonal_stability_class": "unstable",
+  "seasonal_stability": 0.3,
+  "seasonal_stability_class": "moderate",
   "forecast_engine": "prophet_linear_f20_v3",
   "timing_bias_correction": {
     "n_observations": 0,
@@ -22,10 +22,6 @@
   "surge_outlook": null,
   "no_signal_reason": "98% of weeks are zero -- series is not forecastable",
   "history": [
-    {
-      "date": "2021-09-19",
-      "value": 0
-    },
     {
       "date": "2021-09-26",
       "value": 0
@@ -148,7 +144,7 @@
     },
     {
       "date": "2022-04-24",
-      "value": 60
+      "value": 0
     },
     {
       "date": "2022-05-01",
@@ -352,7 +348,7 @@
     },
     {
       "date": "2023-04-16",
-      "value": 0
+      "value": 51
     },
     {
       "date": "2023-04-23",
@@ -472,7 +468,7 @@
     },
     {
       "date": "2023-11-12",
-      "value": 68
+      "value": 0
     },
     {
       "date": "2023-11-19",
@@ -612,7 +608,7 @@
     },
     {
       "date": "2024-07-14",
-      "value": 72
+      "value": 0
     },
     {
       "date": "2024-07-21",
@@ -940,7 +936,7 @@
     },
     {
       "date": "2026-02-08",
-      "value": 97
+      "value": 82
     },
     {
       "date": "2026-02-15",
@@ -1016,7 +1012,7 @@
     },
     {
       "date": "2026-06-21",
-      "value": 0
+      "value": 53
     },
     {
       "date": "2026-06-28",
@@ -1060,442 +1056,426 @@
     },
     {
       "date": "2026-09-06",
-      "value": 6
+      "value": 0
     },
     {
       "date": "2026-09-13",
-      "value": 10
+      "value": 7
+    },
+    {
+      "date": "2026-09-20",
+      "value": 0
     }
   ],
   "active_surge": {
-    "date": "2026-09-20",
+    "date": "2026-09-27",
     "value": 0,
     "note": "Partial current week."
   },
   "anomalies": [
     {
-      "date": "2022-04-24",
-      "value": 60,
-      "z": 60000000.0
-    },
-    {
-      "date": "2023-11-12",
-      "value": 68,
-      "z": 68000000.0
-    },
-    {
-      "date": "2024-07-14",
-      "value": 72,
-      "z": 72000000.0
+      "date": "2023-04-16",
+      "value": 51,
+      "z": 51000000.0
     },
     {
       "date": "2026-02-08",
-      "value": 97,
-      "z": 97000000.0
+      "value": 82,
+      "z": 82000000.0
     },
     {
       "date": "2026-05-03",
       "value": 100,
-      "z": 3.43
-    },
-    {
-      "date": "2026-09-06",
-      "value": 6,
-      "z": 6000000.0
-    },
-    {
-      "date": "2026-09-13",
-      "value": 10,
-      "z": 5.73
+      "z": 4.11
     }
   ],
   "forecast": [
     {
-      "date": "2026-09-20",
-      "value": 1.1,
-      "yhat_lower": 0.0,
-      "yhat_upper": 14.6,
-      "interval_width_ratio": 13.591
-    },
-    {
       "date": "2026-09-27",
-      "value": 2.0,
+      "value": 4.7,
       "yhat_lower": 0.0,
-      "yhat_upper": 16.2,
-      "interval_width_ratio": 8.243
+      "yhat_upper": 15.2,
+      "interval_width_ratio": 3.219
     },
     {
       "date": "2026-10-04",
-      "value": 2.7,
+      "value": 4.4,
       "yhat_lower": 0.0,
-      "yhat_upper": 16.1,
-      "interval_width_ratio": 5.884
+      "yhat_upper": 15.8,
+      "interval_width_ratio": 3.549
     },
     {
       "date": "2026-10-11",
-      "value": 0.4,
+      "value": 4.4,
       "yhat_lower": 0.0,
-      "yhat_upper": 13.0,
-      "interval_width_ratio": 32.942
+      "yhat_upper": 15.0,
+      "interval_width_ratio": 3.372
     },
     {
       "date": "2026-10-18",
-      "value": 3.4,
+      "value": 5.0,
       "yhat_lower": 0.0,
-      "yhat_upper": 17.0,
-      "interval_width_ratio": 4.958
+      "yhat_upper": 15.4,
+      "interval_width_ratio": 3.078
     },
     {
       "date": "2026-10-25",
-      "value": 1.3,
+      "value": 4.2,
       "yhat_lower": 0.0,
-      "yhat_upper": 14.5,
-      "interval_width_ratio": 11.333
+      "yhat_upper": 15.3,
+      "interval_width_ratio": 3.649
     },
     {
       "date": "2026-11-01",
-      "value": 0.4,
+      "value": 5.1,
       "yhat_lower": 0.0,
-      "yhat_upper": 13.1,
-      "interval_width_ratio": 35.57
+      "yhat_upper": 15.4,
+      "interval_width_ratio": 3.055
     },
     {
       "date": "2026-11-08",
-      "value": 10.1,
+      "value": 4.7,
       "yhat_lower": 0.0,
-      "yhat_upper": 23.1,
-      "interval_width_ratio": 2.29
+      "yhat_upper": 15.2,
+      "interval_width_ratio": 3.222
     },
     {
       "date": "2026-11-15",
-      "value": 9.7,
+      "value": 4.5,
       "yhat_lower": 0.0,
-      "yhat_upper": 23.2,
-      "interval_width_ratio": 2.388
+      "yhat_upper": 15.1,
+      "interval_width_ratio": 3.383
     },
     {
       "date": "2026-11-22",
-      "value": 1.3,
+      "value": 5.4,
       "yhat_lower": 0.0,
-      "yhat_upper": 13.8,
-      "interval_width_ratio": 10.376
+      "yhat_upper": 16.6,
+      "interval_width_ratio": 3.095
     },
     {
       "date": "2026-11-29",
-      "value": 1.1,
+      "value": 4.4,
       "yhat_lower": 0.0,
-      "yhat_upper": 13.9,
-      "interval_width_ratio": 12.224
+      "yhat_upper": 15.2,
+      "interval_width_ratio": 3.485
     },
     {
       "date": "2026-12-06",
-      "value": 2.7,
+      "value": 5.1,
       "yhat_lower": 0.0,
-      "yhat_upper": 17.3,
-      "interval_width_ratio": 6.311
+      "yhat_upper": 15.3,
+      "interval_width_ratio": 2.989
     },
     {
       "date": "2026-12-13",
-      "value": 1.7,
+      "value": 5.2,
       "yhat_lower": 0.0,
-      "yhat_upper": 15.0,
-      "interval_width_ratio": 8.929
+      "yhat_upper": 15.3,
+      "interval_width_ratio": 2.931
     },
     {
       "date": "2026-12-20",
-      "value": 1.5,
+      "value": 4.3,
       "yhat_lower": 0.0,
-      "yhat_upper": 15.9,
-      "interval_width_ratio": 10.293
+      "yhat_upper": 14.6,
+      "interval_width_ratio": 3.38
     },
     {
       "date": "2026-12-27",
-      "value": 2.6,
+      "value": 5.8,
       "yhat_lower": 0.0,
-      "yhat_upper": 16.1,
-      "interval_width_ratio": 6.16
+      "yhat_upper": 15.8,
+      "interval_width_ratio": 2.716
     },
     {
       "date": "2027-01-03",
-      "value": 1.6,
+      "value": 4.6,
       "yhat_lower": 0.0,
-      "yhat_upper": 15.5,
-      "interval_width_ratio": 9.955
+      "yhat_upper": 16.2,
+      "interval_width_ratio": 3.507
     },
     {
       "date": "2027-01-10",
-      "value": 1.5,
+      "value": 4.7,
       "yhat_lower": 0.0,
-      "yhat_upper": 14.5,
-      "interval_width_ratio": 9.779
+      "yhat_upper": 15.7,
+      "interval_width_ratio": 3.304
     },
     {
       "date": "2027-01-17",
-      "value": 3.5,
+      "value": 6.5,
       "yhat_lower": 0.0,
-      "yhat_upper": 16.1,
-      "interval_width_ratio": 4.635
+      "yhat_upper": 17.4,
+      "interval_width_ratio": 2.679
     },
     {
       "date": "2027-01-24",
-      "value": 0.0,
+      "value": 3.1,
       "yhat_lower": 0.0,
-      "yhat_upper": 14.2,
-      "interval_width_ratio": 1.0
+      "yhat_upper": 13.7,
+      "interval_width_ratio": 4.439
     },
     {
       "date": "2027-01-31",
-      "value": 3.6,
+      "value": 6.9,
       "yhat_lower": 0.0,
-      "yhat_upper": 16.6,
-      "interval_width_ratio": 4.626
+      "yhat_upper": 18.1,
+      "interval_width_ratio": 2.618
     },
     {
       "date": "2027-02-07",
-      "value": 16.1,
-      "yhat_lower": 2.2,
-      "yhat_upper": 30.1,
-      "interval_width_ratio": 1.735
+      "value": 16.8,
+      "yhat_lower": 5.6,
+      "yhat_upper": 27.3,
+      "interval_width_ratio": 1.289
     },
     {
       "date": "2027-02-14",
-      "value": 9.2,
-      "yhat_lower": 0.0,
-      "yhat_upper": 22.8,
-      "interval_width_ratio": 2.471
+      "value": 11.7,
+      "yhat_lower": 1.5,
+      "yhat_upper": 22.9,
+      "interval_width_ratio": 1.829
     },
     {
       "date": "2027-02-21",
-      "value": 0.0,
+      "value": 2.4,
       "yhat_lower": 0.0,
-      "yhat_upper": 11.2,
-      "interval_width_ratio": 1.0
+      "yhat_upper": 12.8,
+      "interval_width_ratio": 5.377
     },
     {
       "date": "2027-02-28",
-      "value": 3.1,
+      "value": 5.9,
       "yhat_lower": 0.0,
-      "yhat_upper": 16.3,
-      "interval_width_ratio": 5.307
+      "yhat_upper": 16.7,
+      "interval_width_ratio": 2.839
     },
     {
       "date": "2027-03-07",
-      "value": 2.5,
+      "value": 6.7,
       "yhat_lower": 0.0,
-      "yhat_upper": 16.0,
-      "interval_width_ratio": 6.284
+      "yhat_upper": 18.5,
+      "interval_width_ratio": 2.768
     },
     {
       "date": "2027-03-14",
-      "value": 0.5,
+      "value": 3.3,
       "yhat_lower": 0.0,
-      "yhat_upper": 13.5,
-      "interval_width_ratio": 25.1
+      "yhat_upper": 13.9,
+      "interval_width_ratio": 4.215
     },
     {
       "date": "2027-03-21",
-      "value": 3.4,
+      "value": 7.3,
       "yhat_lower": 0.0,
-      "yhat_upper": 16.2,
-      "interval_width_ratio": 4.754
+      "yhat_upper": 17.6,
+      "interval_width_ratio": 2.424
     },
     {
       "date": "2027-03-28",
-      "value": 1.2,
+      "value": 5.3,
       "yhat_lower": 0.0,
-      "yhat_upper": 14.3,
-      "interval_width_ratio": 11.775
+      "yhat_upper": 15.8,
+      "interval_width_ratio": 2.997
     },
     {
       "date": "2027-04-04",
-      "value": 1.9,
+      "value": 3.2,
       "yhat_lower": 0.0,
-      "yhat_upper": 14.8,
-      "interval_width_ratio": 7.899
+      "yhat_upper": 13.5,
+      "interval_width_ratio": 4.243
     },
     {
       "date": "2027-04-11",
-      "value": 2.6,
-      "yhat_lower": 0.0,
-      "yhat_upper": 16.0,
-      "interval_width_ratio": 6.205
+      "value": 12.1,
+      "yhat_lower": 0.8,
+      "yhat_upper": 23.1,
+      "interval_width_ratio": 1.833
     },
     {
       "date": "2027-04-18",
-      "value": 2.2,
+      "value": 10.0,
       "yhat_lower": 0.0,
-      "yhat_upper": 15.7,
-      "interval_width_ratio": 7.069
+      "yhat_upper": 20.2,
+      "interval_width_ratio": 2.012
     },
     {
       "date": "2027-04-25",
-      "value": 13.3,
-      "yhat_lower": 0.9,
-      "yhat_upper": 27.2,
-      "interval_width_ratio": 1.974
+      "value": 7.7,
+      "yhat_lower": 0.0,
+      "yhat_upper": 18.7,
+      "interval_width_ratio": 2.418
     },
     {
       "date": "2027-05-02",
-      "value": 18.3,
-      "yhat_lower": 5.7,
-      "yhat_upper": 31.0,
-      "interval_width_ratio": 1.38
+      "value": 19.2,
+      "yhat_lower": 7.6,
+      "yhat_upper": 29.1,
+      "interval_width_ratio": 1.119
     },
     {
       "date": "2027-05-09",
-      "value": 7.0,
-      "yhat_lower": 0.0,
-      "yhat_upper": 21.1,
-      "interval_width_ratio": 3.022
+      "value": 14.0,
+      "yhat_lower": 4.2,
+      "yhat_upper": 24.7,
+      "interval_width_ratio": 1.462
     },
     {
       "date": "2027-05-16",
-      "value": 0.6,
+      "value": 1.9,
       "yhat_lower": 0.0,
-      "yhat_upper": 13.2,
-      "interval_width_ratio": 22.126
+      "yhat_upper": 11.5,
+      "interval_width_ratio": 5.959
     },
     {
       "date": "2027-05-23",
-      "value": 2.0,
+      "value": 6.5,
       "yhat_lower": 0.0,
-      "yhat_upper": 14.6,
-      "interval_width_ratio": 7.288
+      "yhat_upper": 17.1,
+      "interval_width_ratio": 2.611
     },
     {
       "date": "2027-05-30",
-      "value": 2.4,
+      "value": 7.3,
       "yhat_lower": 0.0,
-      "yhat_upper": 15.4,
-      "interval_width_ratio": 6.433
+      "yhat_upper": 17.7,
+      "interval_width_ratio": 2.418
     },
     {
       "date": "2027-06-06",
-      "value": 1.9,
+      "value": 3.2,
       "yhat_lower": 0.0,
-      "yhat_upper": 14.3,
-      "interval_width_ratio": 7.423
+      "yhat_upper": 13.7,
+      "interval_width_ratio": 4.263
     },
     {
       "date": "2027-06-13",
-      "value": 1.5,
+      "value": 8.1,
       "yhat_lower": 0.0,
-      "yhat_upper": 14.7,
-      "interval_width_ratio": 9.644
+      "yhat_upper": 18.6,
+      "interval_width_ratio": 2.304
     },
     {
       "date": "2027-06-20",
-      "value": 2.9,
-      "yhat_lower": 0.0,
-      "yhat_upper": 16.1,
-      "interval_width_ratio": 5.617
+      "value": 13.0,
+      "yhat_lower": 2.2,
+      "yhat_upper": 23.2,
+      "interval_width_ratio": 1.617
     },
     {
       "date": "2027-06-27",
-      "value": 1.5,
+      "value": 9.8,
       "yhat_lower": 0.0,
-      "yhat_upper": 14.2,
-      "interval_width_ratio": 9.426
+      "yhat_upper": 20.8,
+      "interval_width_ratio": 2.122
     },
     {
       "date": "2027-07-04",
-      "value": 0.9,
+      "value": 4.7,
       "yhat_lower": 0.0,
-      "yhat_upper": 15.1,
-      "interval_width_ratio": 17.55
+      "yhat_upper": 15.6,
+      "interval_width_ratio": 3.293
     },
     {
       "date": "2027-07-11",
-      "value": 9.8,
+      "value": 5.8,
       "yhat_lower": 0.0,
-      "yhat_upper": 23.1,
-      "interval_width_ratio": 2.352
+      "yhat_upper": 17.6,
+      "interval_width_ratio": 3.031
     },
     {
       "date": "2027-07-18",
-      "value": 11.1,
+      "value": 6.9,
       "yhat_lower": 0.0,
-      "yhat_upper": 25.9,
-      "interval_width_ratio": 2.325
+      "yhat_upper": 17.9,
+      "interval_width_ratio": 2.576
     },
     {
       "date": "2027-07-25",
-      "value": 0.9,
+      "value": 5.2,
       "yhat_lower": 0.0,
-      "yhat_upper": 14.2,
-      "interval_width_ratio": 15.225
+      "yhat_upper": 17.3,
+      "interval_width_ratio": 3.331
     },
     {
       "date": "2027-08-01",
-      "value": 1.1,
+      "value": 6.6,
       "yhat_lower": 0.0,
-      "yhat_upper": 13.3,
-      "interval_width_ratio": 12.52
+      "yhat_upper": 16.6,
+      "interval_width_ratio": 2.534
     },
     {
       "date": "2027-08-08",
-      "value": 3.6,
+      "value": 6.3,
       "yhat_lower": 0.0,
-      "yhat_upper": 16.5,
-      "interval_width_ratio": 4.524
+      "yhat_upper": 16.7,
+      "interval_width_ratio": 2.662
     },
     {
       "date": "2027-08-15",
-      "value": 0.7,
+      "value": 5.6,
       "yhat_lower": 0.0,
-      "yhat_upper": 15.0,
-      "interval_width_ratio": 20.866
+      "yhat_upper": 15.9,
+      "interval_width_ratio": 2.863
     },
     {
       "date": "2027-08-22",
-      "value": 2.6,
+      "value": 7.0,
       "yhat_lower": 0.0,
-      "yhat_upper": 15.0,
-      "interval_width_ratio": 5.869
+      "yhat_upper": 18.3,
+      "interval_width_ratio": 2.619
     },
     {
       "date": "2027-08-29",
-      "value": 2.4,
+      "value": 5.7,
       "yhat_lower": 0.0,
-      "yhat_upper": 15.5,
-      "interval_width_ratio": 6.532
+      "yhat_upper": 16.2,
+      "interval_width_ratio": 2.86
     },
     {
       "date": "2027-09-05",
-      "value": 2.0,
+      "value": 6.4,
       "yhat_lower": 0.0,
-      "yhat_upper": 15.0,
-      "interval_width_ratio": 7.582
+      "yhat_upper": 17.2,
+      "interval_width_ratio": 2.681
     },
     {
       "date": "2027-09-12",
-      "value": 5.1,
+      "value": 7.7,
       "yhat_lower": 0.0,
-      "yhat_upper": 18.6,
-      "interval_width_ratio": 3.652
+      "yhat_upper": 19.0,
+      "interval_width_ratio": 2.476
+    },
+    {
+      "date": "2027-09-19",
+      "value": 6.3,
+      "yhat_lower": 0.0,
+      "yhat_upper": 16.5,
+      "interval_width_ratio": 2.622
     }
   ],
   "spike_windows": [
     {
-      "start": "2026-11-08",
-      "end": "2026-11-15",
-      "peak_date": "2026-11-08",
-      "peak_value": 10.1,
+      "start": "2026-11-22",
+      "end": "2026-11-22",
+      "peak_date": "2026-11-22",
+      "peak_value": 5.4,
       "imminent": false,
       "amplitude_confidence": "low",
       "timing_confidence": "medium",
-      "peak_prominence": 6.005,
-      "interval_width_ratio": 2.339,
+      "peak_prominence": 1.131,
+      "interval_width_ratio": 3.095,
       "confidence": "medium",
-      "peak_date_raw": "2026-11-08",
+      "peak_date_raw": "2026-11-22",
       "bias_correction_weeks": 0.0,
       "bias_correction_source": "disabled",
       "bias_correction_n": 0,
       "marketing_window": {
-        "start": "2026-10-04",
-        "end": "2026-12-06",
-        "buffer_before_weeks": 5,
-        "buffer_after_weeks": 4,
+        "start": "2026-10-25",
+        "end": "2026-12-13",
+        "buffer_before_weeks": 4,
+        "buffer_after_weeks": 3,
         "buffer_source": "stability_class_default",
         "buffer_n_observations": 0
       }
@@ -1504,46 +1484,22 @@
       "start": "2027-02-07",
       "end": "2027-02-07",
       "peak_date": "2027-02-07",
-      "peak_value": 16.1,
+      "peak_value": 16.8,
       "imminent": false,
       "amplitude_confidence": "low",
       "timing_confidence": "medium",
-      "peak_prominence": 6.133,
-      "interval_width_ratio": 1.735,
+      "peak_prominence": 2.926,
+      "interval_width_ratio": 1.289,
       "confidence": "medium",
       "peak_date_raw": "2027-02-07",
       "bias_correction_weeks": 0.0,
       "bias_correction_source": "disabled",
       "bias_correction_n": 0,
       "marketing_window": {
-        "start": "2027-01-03",
-        "end": "2027-03-07",
-        "buffer_before_weeks": 5,
-        "buffer_after_weeks": 4,
-        "buffer_source": "stability_class_default",
-        "buffer_n_observations": 0
-      }
-    },
-    {
-      "start": "2027-03-21",
-      "end": "2027-03-21",
-      "peak_date": "2027-03-21",
-      "peak_value": 3.4,
-      "imminent": false,
-      "amplitude_confidence": "low",
-      "timing_confidence": "low",
-      "peak_prominence": 0.575,
-      "interval_width_ratio": 4.754,
-      "confidence": "low",
-      "peak_date_raw": "2027-03-21",
-      "bias_correction_weeks": 0.0,
-      "bias_correction_source": "disabled",
-      "bias_correction_n": 0,
-      "marketing_window": {
-        "start": "2027-02-14",
-        "end": "2027-04-18",
-        "buffer_before_weeks": 5,
-        "buffer_after_weeks": 4,
+        "start": "2027-01-10",
+        "end": "2027-02-28",
+        "buffer_before_weeks": 4,
+        "buffer_after_weeks": 3,
         "buffer_source": "stability_class_default",
         "buffer_n_observations": 0
       }
@@ -1552,46 +1508,46 @@
       "start": "2027-05-02",
       "end": "2027-05-02",
       "peak_date": "2027-05-02",
-      "peak_value": 18.3,
+      "peak_value": 19.2,
       "imminent": false,
       "amplitude_confidence": "low",
       "timing_confidence": "medium",
-      "peak_prominence": 5.49,
-      "interval_width_ratio": 1.38,
+      "peak_prominence": 2.661,
+      "interval_width_ratio": 1.119,
       "confidence": "medium",
       "peak_date_raw": "2027-05-02",
       "bias_correction_weeks": 0.0,
       "bias_correction_source": "disabled",
       "bias_correction_n": 0,
       "marketing_window": {
-        "start": "2027-03-28",
-        "end": "2027-05-30",
-        "buffer_before_weeks": 5,
-        "buffer_after_weeks": 4,
+        "start": "2027-04-04",
+        "end": "2027-05-23",
+        "buffer_before_weeks": 4,
+        "buffer_after_weeks": 3,
         "buffer_source": "stability_class_default",
         "buffer_n_observations": 0
       }
     },
     {
-      "start": "2027-07-18",
-      "end": "2027-07-18",
-      "peak_date": "2027-07-18",
-      "peak_value": 11.1,
+      "start": "2027-06-20",
+      "end": "2027-06-20",
+      "peak_date": "2027-06-20",
+      "peak_value": 13.0,
       "imminent": false,
       "amplitude_confidence": "low",
       "timing_confidence": "medium",
-      "peak_prominence": 4.47,
-      "interval_width_ratio": 2.325,
+      "peak_prominence": 1.95,
+      "interval_width_ratio": 1.617,
       "confidence": "medium",
-      "peak_date_raw": "2027-07-18",
+      "peak_date_raw": "2027-06-20",
       "bias_correction_weeks": 0.0,
       "bias_correction_source": "disabled",
       "bias_correction_n": 0,
       "marketing_window": {
-        "start": "2027-06-13",
-        "end": "2027-08-15",
-        "buffer_before_weeks": 5,
-        "buffer_after_weeks": 4,
+        "start": "2027-05-23",
+        "end": "2027-07-11",
+        "buffer_before_weeks": 4,
+        "buffer_after_weeks": 3,
         "buffer_source": "stability_class_default",
         "buffer_n_observations": 0
       }
@@ -1600,22 +1556,22 @@
       "start": "2027-09-12",
       "end": "2027-09-12",
       "peak_date": "2027-09-12",
-      "peak_value": 5.1,
+      "peak_value": 7.7,
       "imminent": false,
       "amplitude_confidence": "low",
       "timing_confidence": "medium",
-      "peak_prominence": 2.468,
-      "interval_width_ratio": 3.652,
+      "peak_prominence": 1.228,
+      "interval_width_ratio": 2.476,
       "confidence": "medium",
       "peak_date_raw": "2027-09-12",
       "bias_correction_weeks": 0.0,
       "bias_correction_source": "disabled",
       "bias_correction_n": 0,
       "marketing_window": {
-        "start": "2027-08-08",
-        "end": "2027-10-10",
-        "buffer_before_weeks": 5,
-        "buffer_after_weeks": 4,
+        "start": "2027-08-15",
+        "end": "2027-10-03",
+        "buffer_before_weeks": 4,
+        "buffer_after_weeks": 3,
         "buffer_source": "stability_class_default",
         "buffer_n_observations": 0
       }
