@@ -83,6 +83,26 @@
 </style>
 </head>
 <body>
+<script>
+// Theme: ?theme=dark|light (used by the AdsHub embed) wins, then the last
+// choice saved in this browser, otherwise light. Runs before any chart renders.
+(function(){
+  var KEY = "trends-theme", t = null;
+  try { t = new URLSearchParams(location.search).get("theme"); } catch (e) {}
+  if (t === "dark" || t === "light") { try { localStorage.setItem(KEY, t); } catch (e) {} }
+  else { try { t = localStorage.getItem(KEY); } catch (e) {} }
+  if (t === "dark") document.body.setAttribute("data-theme", "dark");
+  document.addEventListener("DOMContentLoaded", function(){
+    var btn = document.getElementById("themeToggle");
+    if (!btn) return;
+    if (document.body.getAttribute("data-theme") === "dark") btn.textContent = "\u2600\ufe0f Light";
+    btn.addEventListener("click", function(){
+      try { localStorage.setItem(KEY, document.body.getAttribute("data-theme") === "dark" ? "dark" : "light"); } catch (e) {}
+    });
+  });
+})();
+</script>
+
 <div class="wrap">
 
   <header>
